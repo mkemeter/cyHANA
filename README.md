@@ -1,7 +1,7 @@
 # Cytoscape Plugin for SAP HANA
 The Cytoscape Plugin for SAP HANA (cyHANA) is an app to connect Cytoscape to [SAP HANA Graph](https://help.sap.com/viewer/11afa2e60a5f4192a381df30f94863f9/2021_2_QRC/en-US/30d1d8cfd5d0470dbaac2ebe20cefb8f.html). The current **premature version** has a rather reduced feature scope. If time allows, the scope and matureness of the plugin may improve in future.
 
-> Please note, that although I am associated with SAP this is **not** an official plugin by SAP, but rather a spare time project developed by a Java amateur.
+> Please note, that although I am associated with SAP this is **not** an official plugin by SAP, but rather a spare time project developed by a Java amateur, who is happy that it works on his machine.
 
 The plugin is tested to work with [Cytoscape 3.8.2](https://cytoscape.org/), [SapMachine 11](https://sap.github.io/SapMachine/) and [NGDBC 2.9.16](https://tools.hana.ondemand.com/#hanatools).
 
