@@ -1,3 +1,5 @@
+![](doc/img/cover_image.png)
+
 # Cytoscape Plugin for SAP HANA
 The Cytoscape Plugin for SAP HANA (cyHANA) is an app to connect Cytoscape to SAP HANA Graph. The current preliminary version has a rather reduced feature scope. If time allows, the scope and matureness of the plugin may improve in future.
 
