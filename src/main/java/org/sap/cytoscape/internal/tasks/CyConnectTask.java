@@ -6,6 +6,7 @@ import org.cytoscape.work.TaskMonitor;
 import org.cytoscape.work.Tunable;
 import org.sap.cytoscape.internal.hdb.HanaConnectionCredentials;
 import org.sap.cytoscape.internal.hdb.HanaConnectionManager;
+import org.sap.cytoscape.internal.utils.IOUtils;
 
 import java.io.*;
 import java.sql.SQLException;
@@ -61,63 +62,6 @@ public class CyConnectTask extends AbstractTask {
     private final HanaConnectionManager connectionManager;
 
     /**
-     * The filename where credentials will be stored between sessions
-     */
-    private final String credentialCacheFile = "cyhana_cache.properties";
-
-    /**
-     * Stores current credentials to a properties file. Password will
-     * only be stored, if the respective checkbox has been selected.
-     */
-    private void saveCredentials() throws IOException {
-        Properties credProps = new Properties();
-        credProps.setProperty("hdb.host", this.host);
-        credProps.setProperty("hdb.port", this.port);
-        credProps.setProperty("hdb.username", this.username);
-
-        if (this.savePassword) {
-            credProps.setProperty("hdb.password", this.password);
-        } else {
-            // overwrite previously saved passwords
-            credProps.setProperty("hdb.password", "");
-        }
-
-        try (OutputStream output = new FileOutputStream(this.credentialCacheFile)){
-            credProps.store(output, null);
-        } catch(IOException e){
-            System.err.println("Cannot store connection credentials");
-            System.err.println(e);
-            throw e;
-        }
-    }
-
-    /**
-     * Loads previously cached credentials from a properties file. If a password
-     * has been saved before, it assumes that the user wants to do the same again
-     * and pre-selects the checkbox to store passwords in plain text.
-     */
-    private void loadCredentials(){
-        try (InputStream input = new FileInputStream(this.credentialCacheFile)) {
-            // load cached credentials
-            Properties credProps = new Properties();
-            credProps.load(input);
-
-            this.host = credProps.getProperty("hdb.host");
-            this.port = credProps.getProperty("hdb.port");
-            this.username = credProps.getProperty("hdb.username");
-            this.password = credProps.getProperty("hdb.password");
-            // assume that the user still wants to store the password, if this
-            // has been done before
-            this.savePassword = this.password.length() > 0;
-
-        } catch (IOException e) {
-            // this will happen at least on the first start and is likely
-            // not an issue
-            System.err.println("Cannot load cached connection credentials");
-        }
-    }
-
-    /**
      * Constructor loads credentials from the file system that have been cached before.
      *
      * @param connectionManager HanaConnectionManager object
@@ -126,7 +70,21 @@ public class CyConnectTask extends AbstractTask {
             HanaConnectionManager connectionManager
     ){
         this.connectionManager = connectionManager;
-        loadCredentials();
+        try{
+            HanaConnectionCredentials cachedCredentials = IOUtils.loadCredentials();
+
+            this.host = cachedCredentials.host;
+            this.port = cachedCredentials.port;
+            this.username = cachedCredentials.username;
+            this.password = cachedCredentials.password;
+
+            // assume that the user still wants to store the password, if this
+            // has been done before
+            this.savePassword = this.password.length() > 0;
+
+        }catch (IOException e){
+            // file was probably not yet existing
+        }
     }
 
     /**
@@ -138,20 +96,21 @@ public class CyConnectTask extends AbstractTask {
      */
     @Override
     public void run(TaskMonitor taskMonitor) throws Exception {
+
         taskMonitor.setTitle("SAP HANA Connection");
         taskMonitor.setProgress(0d);
-
-        // save credentials to properties file
-        try{
-            saveCredentials();
-        }catch(IOException e){
-            taskMonitor.showMessage(TaskMonitor.Level.ERROR, "Unable to cache login credentials");
-            taskMonitor.showMessage(TaskMonitor.Level.ERROR, e.toString());
-        }
 
         HanaConnectionCredentials cred = new HanaConnectionCredentials(
                 this.host, this.port, this.username, this.password
         );
+
+        // save credentials to properties file
+        try{
+            IOUtils.cacheCredentials(cred, this.savePassword);
+        }catch(IOException e){
+            taskMonitor.showMessage(TaskMonitor.Level.ERROR, "Unable to cache login credentials");
+            taskMonitor.showMessage(TaskMonitor.Level.ERROR, e.toString());
+        }
 
         // establish connection
         try{
