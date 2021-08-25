@@ -1,4 +1,4 @@
-package org.sap.cytoscape.internal.hdb;
+package org.kemeter.cytoscape.internal.hdb;
 
 /**
  * Describes an object in an SAP HANA database (e.g. table, procedure, graph workspace, ...)

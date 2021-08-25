@@ -10,10 +10,11 @@ The current feature scope comprises:
 - Establish connection to SAP HANA (Cloud)
 - Load all nodes and edges of an existing (homogeneous) graph workspace
 
-## Download
+## Installation
+### Download
 The latest (bleeding edge) package can be downloaded in the [packages section](https://github.com/mkemeter/cyHANA/packages). Check the `Assets` list for the latest jar file.
 
-## Installation
+### Setup
 After getting the latest JAR package, you can install the plugin using the [Cytoscape App Manager](http://manual.cytoscape.org/en/stable/App_Manager.html). 
 
 The plugin makes use of the SAP HANA JDBC client, which additionally needs to be included on the classpath. The latest version can be retrieved from the [SAP Development Tools](https://tools.hana.ondemand.com/#hanatools) (look for ngdcb-latest.jar).

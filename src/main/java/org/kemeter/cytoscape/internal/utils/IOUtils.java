@@ -1,6 +1,6 @@
-package org.sap.cytoscape.internal.utils;
+package org.kemeter.cytoscape.internal.utils;
 
-import org.sap.cytoscape.internal.hdb.HanaConnectionCredentials;
+import org.kemeter.cytoscape.internal.hdb.HanaConnectionCredentials;
 
 import java.io.*;
 import java.nio.file.Paths;

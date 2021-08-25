@@ -1,4 +1,4 @@
-package org.sap.cytoscape.internal.tasks;
+package org.kemeter.cytoscape.internal.tasks;
 
 import org.cytoscape.model.*;
 import org.cytoscape.work.AbstractTask;
@@ -6,7 +6,7 @@ import org.cytoscape.work.ProvidesTitle;
 import org.cytoscape.work.TaskMonitor;
 import org.cytoscape.work.Tunable;
 import org.cytoscape.work.util.ListSingleSelection;
-import org.sap.cytoscape.internal.hdb.*;
+import org.kemeter.cytoscape.internal.hdb.*;
 
 import java.util.HashMap;
 import java.util.List;

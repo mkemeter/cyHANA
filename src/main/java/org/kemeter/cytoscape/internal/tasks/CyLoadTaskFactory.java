@@ -1,10 +1,10 @@
-package org.sap.cytoscape.internal.tasks;
+package org.kemeter.cytoscape.internal.tasks;
 
 import org.cytoscape.model.CyNetworkFactory;
 import org.cytoscape.model.CyNetworkManager;
 import org.cytoscape.work.AbstractTaskFactory;
 import org.cytoscape.work.TaskIterator;
-import org.sap.cytoscape.internal.hdb.HanaConnectionManager;
+import org.kemeter.cytoscape.internal.hdb.HanaConnectionManager;
 
 public class CyLoadTaskFactory extends AbstractTaskFactory{
 

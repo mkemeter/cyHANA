@@ -1,14 +1,14 @@
-package org.sap.cytoscape.internal;
+package org.kemeter.cytoscape.internal;
 
 import org.cytoscape.model.CyNetworkFactory;
 import org.cytoscape.model.CyNetworkManager;
 import org.cytoscape.service.util.AbstractCyActivator;
 import org.cytoscape.work.ServiceProperties;
 import org.cytoscape.work.TaskFactory;
+import org.kemeter.cytoscape.internal.tasks.CyLoadTaskFactory;
 import org.osgi.framework.BundleContext;
-import org.sap.cytoscape.internal.hdb.HanaConnectionManager;
-import org.sap.cytoscape.internal.tasks.CyConnectTaskFactory;
-import org.sap.cytoscape.internal.tasks.CyLoadTaskFactory;
+import org.kemeter.cytoscape.internal.hdb.HanaConnectionManager;
+import org.kemeter.cytoscape.internal.tasks.CyConnectTaskFactory;
 
 import java.util.Properties;
 

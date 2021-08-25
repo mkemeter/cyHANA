@@ -1,9 +1,9 @@
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.sap.cytoscape.internal.hdb.HanaConnectionManager;
-import org.sap.cytoscape.internal.hdb.HanaDbObject;
-import org.sap.cytoscape.internal.hdb.HanaGraphWorkspace;
+import org.kemeter.cytoscape.internal.hdb.HanaConnectionManager;
+import org.kemeter.cytoscape.internal.hdb.HanaDbObject;
+import org.kemeter.cytoscape.internal.hdb.HanaGraphWorkspace;
 
 import java.io.IOException;
 import java.util.List;

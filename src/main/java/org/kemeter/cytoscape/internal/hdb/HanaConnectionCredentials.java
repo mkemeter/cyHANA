@@ -1,4 +1,4 @@
-package org.sap.cytoscape.internal.hdb;
+package org.kemeter.cytoscape.internal.hdb;
 
 /**
  * Connection credentials to connect to an SAP HANA database

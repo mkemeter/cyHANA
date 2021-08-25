@@ -1,11 +1,10 @@
 import org.junit.Assert;
 import org.junit.Test;
-import org.sap.cytoscape.internal.hdb.HanaConnectionCredentials;
-import org.sap.cytoscape.internal.utils.IOUtils;
+import org.kemeter.cytoscape.internal.hdb.HanaConnectionCredentials;
+import org.kemeter.cytoscape.internal.utils.IOUtils;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.util.UUID;
 
 public class UtilsTest {

@@ -1,16 +1,15 @@
-package org.sap.cytoscape.internal.tasks;
+package org.kemeter.cytoscape.internal.tasks;
 
 import org.cytoscape.work.AbstractTask;
 import org.cytoscape.work.ProvidesTitle;
 import org.cytoscape.work.TaskMonitor;
 import org.cytoscape.work.Tunable;
-import org.sap.cytoscape.internal.hdb.HanaConnectionCredentials;
-import org.sap.cytoscape.internal.hdb.HanaConnectionManager;
-import org.sap.cytoscape.internal.utils.IOUtils;
+import org.kemeter.cytoscape.internal.hdb.HanaConnectionManager;
+import org.kemeter.cytoscape.internal.utils.IOUtils;
+import org.kemeter.cytoscape.internal.hdb.HanaConnectionCredentials;
 
 import java.io.*;
 import java.sql.SQLException;
-import java.util.Properties;
 
 /**
  * The task establishes the connection to an SAP HANA instance

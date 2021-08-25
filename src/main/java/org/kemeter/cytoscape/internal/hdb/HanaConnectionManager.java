@@ -1,4 +1,4 @@
-package org.sap.cytoscape.internal.hdb;
+package org.kemeter.cytoscape.internal.hdb;
 
 import java.sql.*;
 import java.util.ArrayList;

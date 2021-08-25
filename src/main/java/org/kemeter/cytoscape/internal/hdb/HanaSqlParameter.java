@@ -1,4 +1,4 @@
-package org.sap.cytoscape.internal.hdb;
+package org.kemeter.cytoscape.internal.hdb;
 
 /**
  * Describes a generic SQL parameter
