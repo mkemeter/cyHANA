@@ -69,7 +69,7 @@ public class CyConnectTask extends AbstractTask {
      * Stores current credentials to a properties file. Password will
      * only be stored, if the respective checkbox has been selected.
      */
-    private void saveCredentials(){
+    private void saveCredentials() throws IOException {
         Properties credProps = new Properties();
         credProps.setProperty("hdb.host", this.host);
         credProps.setProperty("hdb.port", this.port);
@@ -87,6 +87,7 @@ public class CyConnectTask extends AbstractTask {
         } catch(IOException e){
             System.err.println("Cannot store connection credentials");
             System.err.println(e);
+            throw e;
         }
     }
 
@@ -141,7 +142,12 @@ public class CyConnectTask extends AbstractTask {
         taskMonitor.setProgress(0d);
 
         // save credentials to properties file
-        saveCredentials();
+        try{
+            saveCredentials();
+        }catch(IOException e){
+            taskMonitor.showMessage(TaskMonitor.Level.ERROR, "Unable to cache login credentials");
+            taskMonitor.showMessage(TaskMonitor.Level.ERROR, e.toString());
+        }
 
         HanaConnectionCredentials cred = new HanaConnectionCredentials(
                 this.host, this.port, this.username, this.password
