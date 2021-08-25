@@ -24,6 +24,12 @@ jobs:
         server-id: github # Value of the distributionManagement/repository/id field of the pom.xml
         settings-path: ${{ github.workspace }} # location for the settings.xml file
 
+    - name: Remove package versions from GitHub Packages
+      uses: EpitomeGlobal/remove-package-versions@1.0
+      with:
+        keep-versions: 0
+        keep-prerelease-versions: 0
+
     - name: Build with Maven
       run: mvn -B package -DskipTests --file pom.xml
 
