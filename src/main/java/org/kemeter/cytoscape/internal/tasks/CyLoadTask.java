@@ -8,6 +8,7 @@ import org.cytoscape.work.Tunable;
 import org.cytoscape.work.util.ListSingleSelection;
 import org.kemeter.cytoscape.internal.hdb.*;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
@@ -65,7 +66,9 @@ public class CyLoadTask extends AbstractTask {
             }
 
             // pre-populate available workspaces
-            this.workspaceSelection = new ListSingleSelection(graphWorkspaces.keySet().toArray());
+            String[] wsArray = graphWorkspaces.keySet().toArray(new String[0]);
+            Arrays.sort(wsArray);
+            this.workspaceSelection = new ListSingleSelection(wsArray);
         }else{
             // since there is no option, Cytoscape will skip the dialog and start the run method.
             this.workspaceSelection = new ListSingleSelection<>();
