@@ -99,13 +99,11 @@ public class CyLoadTask extends AbstractTask {
         String selectedWorkspaceKey = workspaceSelection.getSelectedValue();
         HanaDbObject selectedWorkspace = graphWorkspaces.get(selectedWorkspaceKey);
 
-        taskMonitor.setStatusMessage("Downloading data from SAP HANA");
+        taskMonitor.setStatusMessage("Downloading data from Graph Workspace " + selectedWorkspaceKey + " in SAP HANA");
 
         // load data from SAP HANA
         HanaGraphWorkspace graphWorkspace =
                 connectionManager.loadGraphWorkspace(selectedWorkspace);
-
-        taskMonitor.setStatusMessage("Finished downloading Graph Workspace " + selectedWorkspaceKey + " from database");
 
         // start network creation in Cytoscape
         CyNetwork newNetwork = this.networkFactory.createNetwork();
@@ -129,6 +127,8 @@ public class CyLoadTask extends AbstractTask {
         int nGraphObjects = graphWorkspace.edgeTable.size() + graphWorkspace.nodeTable.size();
         int progress = 0;
 
+        taskMonitor.setStatusMessage("Creating nodes");
+
         // create nodes
         HashMap<String, CyNode> nodesByHanaKey = new HashMap<>();
         for(HanaNodeTableRow row : graphWorkspace.nodeTable){
@@ -143,7 +143,7 @@ public class CyLoadTask extends AbstractTask {
             taskMonitor.setProgress(progress++ / (double)nGraphObjects);
         }
 
-        taskMonitor.setStatusMessage("All nodes have been created");
+        taskMonitor.setStatusMessage("Creating edges");
 
         // create edges
         for(HanaEdgeTableRow row: graphWorkspace.edgeTable){
@@ -162,8 +162,6 @@ public class CyLoadTask extends AbstractTask {
 
             taskMonitor.setProgress(progress++ / (double)nGraphObjects);
         }
-
-        taskMonitor.setStatusMessage("All edges have been created");
 
         networkManager.addNetwork(newNetwork);
 
