@@ -23,29 +23,34 @@ public class CyActivator extends AbstractCyActivator {
         CyNetworkFactory networkFactory = getService(bc, CyNetworkFactory.class);
         CyNetworkManager networkManager = getService(bc, CyNetworkManager.class);
 
-        HanaConnectionManager connectionManager = new HanaConnectionManager();
+        try {
+            HanaConnectionManager connectionManager = new HanaConnectionManager();
 
-        // connect
-        CyConnectTaskFactory connectFactory = new CyConnectTaskFactory(connectionManager);
-        Properties connectProps = new Properties();
-        connectProps.setProperty(ServiceProperties.PREFERRED_MENU, "Apps.SAP HANA");
-        connectProps.setProperty(ServiceProperties.TITLE, "Connect to Database");
-        connectProps.setProperty(ServiceProperties.MENU_GRAVITY, "1.0");
-        registerService(bc, connectFactory, TaskFactory.class, connectProps);
+            // connect
+            CyConnectTaskFactory connectFactory = new CyConnectTaskFactory(connectionManager);
+            Properties connectProps = new Properties();
+            connectProps.setProperty(ServiceProperties.PREFERRED_MENU, "Apps.SAP HANA");
+            connectProps.setProperty(ServiceProperties.TITLE, "Connect to Database");
+            connectProps.setProperty(ServiceProperties.MENU_GRAVITY, "1.0");
+            registerService(bc, connectFactory, TaskFactory.class, connectProps);
 
-        // load graph workspace
-        CyLoadTaskFactory loadFactory = new CyLoadTaskFactory(networkFactory, networkManager, connectionManager);
-        Properties loadProps = new Properties();
-        loadProps.setProperty(ServiceProperties.PREFERRED_MENU, "Apps.SAP HANA");
-        loadProps.setProperty(ServiceProperties.TITLE, "Load Graph Workspace");
-        loadProps.setProperty(ServiceProperties.MENU_GRAVITY, "2.0");
-        registerService(bc, loadFactory, TaskFactory.class, loadProps);
+            // load graph workspace
+            CyLoadTaskFactory loadFactory = new CyLoadTaskFactory(networkFactory, networkManager, connectionManager);
+            Properties loadProps = new Properties();
+            loadProps.setProperty(ServiceProperties.PREFERRED_MENU, "Apps.SAP HANA");
+            loadProps.setProperty(ServiceProperties.TITLE, "Load Graph Workspace");
+            loadProps.setProperty(ServiceProperties.MENU_GRAVITY, "2.0");
+            registerService(bc, loadFactory, TaskFactory.class, loadProps);
 
-        // load result of OpenCypher query
+            // load result of OpenCypher query
 
-        // load single node (for later exploration via context menu)
+            // load single node (for later exploration via context menu)
 
-        // TODO handle heterogeneous graphs
+            // TODO handle heterogeneous graphs
+        } catch (Exception e){
+            System.err.println("Failed to activate cyHANA plugin");
+            System.err.println(e);
+        }
     }
 
 }

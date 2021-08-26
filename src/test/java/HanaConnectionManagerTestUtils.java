@@ -1,5 +1,6 @@
 import org.kemeter.cytoscape.internal.hdb.HanaConnectionCredentials;
 import org.kemeter.cytoscape.internal.hdb.HanaConnectionManager;
+import org.kemeter.cytoscape.internal.utils.IOUtils;
 
 import java.io.InputStream;
 import java.sql.SQLException;
@@ -12,23 +13,25 @@ public class HanaConnectionManagerTestUtils {
      * @return
      */
     public static HanaConnectionCredentials getTestCredentials(){
-        Properties connectProps = new Properties();
+
+
         try{
-            InputStream inputStream = HanaConnectionManagerTestUtils.class.getClassLoader().getResourceAsStream("testcredentials.properties");
-            connectProps.load(inputStream);
+            Properties connectProps = IOUtils.loadResourceProperties("testcredentials.properties");
+
+            HanaConnectionCredentials testCred = new HanaConnectionCredentials(
+                    connectProps.getProperty("host"),
+                    connectProps.getProperty("port"),
+                    connectProps.getProperty("username"),
+                    connectProps.getProperty("password")
+            );
+
+            return testCred;
         }catch (Exception e){
             System.err.println("Cannot load connection details for test instance");
             return null;
         }
 
-        HanaConnectionCredentials testCred = new HanaConnectionCredentials(
-                connectProps.getProperty("host"),
-                connectProps.getProperty("port"),
-                connectProps.getProperty("username"),
-                connectProps.getProperty("password")
-        );
 
-        return testCred;
     }
 
     /**
@@ -36,13 +39,11 @@ public class HanaConnectionManagerTestUtils {
      * @return
      */
     public static HanaConnectionManager connectToTestInstance(){
-
-        HanaConnectionManager connectionManager = new HanaConnectionManager();
-
         try{
+            HanaConnectionManager connectionManager = new HanaConnectionManager();
             connectionManager.connect(getTestCredentials());
             return connectionManager;
-        } catch (SQLException e){
+        } catch (Exception e){
             return null;
         }
     }

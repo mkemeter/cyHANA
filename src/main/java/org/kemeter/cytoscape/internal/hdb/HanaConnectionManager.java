@@ -1,8 +1,12 @@
 package org.kemeter.cytoscape.internal.hdb;
 
+import org.kemeter.cytoscape.internal.utils.IOUtils;
+
+import java.io.IOException;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 
 /**
  * Handles communication with the database and SAP HANA specific stuff
@@ -25,10 +29,16 @@ public class HanaConnectionManager {
     private Connection connection;
 
     /**
+     * Holding all SQL statement that are required
+     */
+    private Properties sqlStrings;
+
+    /**
      * Default constructor
      */
-    public HanaConnectionManager() {
+    public HanaConnectionManager() throws IOException {
         this.connection = null;
+        this.sqlStrings = IOUtils.loadResourceProperties("SqlStrings.sql");
     }
 
     /**
@@ -203,9 +213,7 @@ public class HanaConnectionManager {
      * @return  Name of the currently active schema
      */
     public String getCurrentSchema(){
-        return this.executeQuerySingleValue(
-                "SELECT CURRENT_SCHEMA FROM DUMMY", null, String.class
-        );
+        return this.executeQuerySingleValue(this.sqlStrings.getProperty("SELECT_CURRENT_SCHEMA"), null, String.class);
     }
 
     /**
@@ -214,9 +222,7 @@ public class HanaConnectionManager {
      * @return  List of all available graph workspaces
      */
     public List<HanaDbObject> listGraphWorkspaces(){
-        List<Object[]> resultList = this.executeQueryList(
-                "SELECT SCHEMA_NAME, WORKSPACE_NAME FROM GRAPH_WORKSPACES WHERE IS_VALID = 'TRUE'"
-        );
+        List<Object[]> resultList = this.executeQueryList(this.sqlStrings.getProperty("LIST_GRAPH_WORKSPACES"));
 
         List<HanaDbObject> workspaceList = new ArrayList<>();
         for(Object[] row : resultList){
@@ -234,14 +240,25 @@ public class HanaConnectionManager {
      * @return                  True, if metadata has been completely loaded
      */
     private boolean loadWorkspaceMetadata(HanaGraphWorkspace graphWorkspace){
+
         List<Object[]> metadata = this.executeQueryList(
-                "SELECT ENTITY_TYPE, ENTITY_ROLE, ENTITY_SCHEMA_NAME, ENTITY_TABLE_NAME, ENTITY_COLUMN_NAME " +
-                        "FROM GRAPH_WORKSPACE_COLUMNS WHERE SCHEMA_NAME = ? AND WORKSPACE_NAME = ?",
+                this.sqlStrings.getProperty("LOAD_WORKSPACE_METADATA_HANA_CLOUD"),
                 new HanaSqlParameter[]{
                         new HanaSqlParameter(graphWorkspace.workspaceDbObject.schema, Types.VARCHAR),
                         new HanaSqlParameter(graphWorkspace.workspaceDbObject.name, Types.VARCHAR)
                 }
         );
+
+        if(metadata == null) {
+            // assume that this is HANA onprem
+            metadata = this.executeQueryList(
+                    this.sqlStrings.getProperty("LOAD_WORKSPACE_METADATA_HANA_ONPREM"),
+                    new HanaSqlParameter[]{
+                            new HanaSqlParameter(graphWorkspace.workspaceDbObject.schema, Types.VARCHAR),
+                            new HanaSqlParameter(graphWorkspace.workspaceDbObject.name, Types.VARCHAR)
+                    }
+            );
+        }
 
         for(Object[] row : metadata){
             HanaColumnInfo newColInfo = new HanaColumnInfo(toStrNull(row[2]), toStrNull(row[3]), toStrNull(row[4]));
@@ -293,7 +310,7 @@ public class HanaConnectionManager {
         }
 
         List<Object[]> nodeTable = this.executeQueryList(String.format(
-                "SELECT \"%s\" %s FROM \"%s\".\"%s\"",
+                this.sqlStrings.getProperty("LOAD_NETWORK_NODES"),
                 graphWorkspace.nodeKeyCol.name,
                 attCols,
                 graphWorkspace.nodeKeyCol.schema,
@@ -327,7 +344,7 @@ public class HanaConnectionManager {
         }
 
         List<Object[]> edgeTable = this.executeQueryList(String.format(
-                "SELECT \"%s\", \"%s\", \"%s\" %s FROM \"%s\".\"%s\"",
+                this.sqlStrings.getProperty("LOAD_NETWORK_EDGES"),
                 graphWorkspace.edgeKeyCol.name,
                 graphWorkspace.edgeSourceCol.name,
                 graphWorkspace.edgeTargetCol.name,

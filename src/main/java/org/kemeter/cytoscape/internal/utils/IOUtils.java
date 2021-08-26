@@ -47,7 +47,7 @@ public class IOUtils {
             credProps.setProperty("hdb.password", "");
         }
 
-        try (OutputStream output = new FileOutputStream(getCacheFile())){
+        try (OutputStream output = new FileOutputStream(file)){
             credProps.store(output, null);
         } catch(IOException e){
             System.err.println("Cannot store connection credentials");
@@ -75,7 +75,7 @@ public class IOUtils {
      */
     public static HanaConnectionCredentials loadCredentials(String file) throws IOException {
 
-        try (InputStream input = new FileInputStream(getCacheFile())) {
+        try (InputStream input = new FileInputStream(file)) {
             // load cached credentials
             Properties credProps = new Properties();
             credProps.load(input);
@@ -103,5 +103,20 @@ public class IOUtils {
      */
     public static void clearCachedCredentials(String file) throws IOException {
         cacheCredentials(file, new HanaConnectionCredentials("", "", "", ""), true);
+    }
+
+    /**
+     *
+     * @param fileName
+     * @return
+     * @throws IOException
+     */
+    public static Properties loadResourceProperties(String fileName) throws IOException {
+        Properties resultProps = new Properties();
+
+        InputStream inputStream = IOUtils.class.getClassLoader().getResourceAsStream(fileName);
+        resultProps.load(inputStream);
+
+        return resultProps;
     }
 }

@@ -21,14 +21,22 @@ public class HanaConnectionManagerTest {
 
     @Test
     public void testInitialSetup(){
-        Assert.assertNotNull(this.connectionManager);
-        Assert.assertTrue(this.connectionManager.isConnected());
+        Assert.assertNotNull(connectionManager);
+        Assert.assertTrue(connectionManager.isConnected());
+    }
+
+    @Test
+    public void testGetCurrentSchema(){
+        String currentSchema = connectionManager.getCurrentSchema();
+
+        Assert.assertNotNull(currentSchema);
+        Assert.assertTrue(currentSchema.length() > 0);
     }
 
     @Test
     public void someQuery(){
 
-        List<Object[]> resultList = this.connectionManager.executeQueryList(
+        List<Object[]> resultList = connectionManager.executeQueryList(
                 "SELECT 'A', 'B' FROM DUMMY UNION SELECT 'C', 'D' FROM DUMMY",
                 null
         );
@@ -46,8 +54,8 @@ public class HanaConnectionManagerTest {
 
     @Test
     public void loadGraphWorkspace(){
-        HanaGraphWorkspace sspWorkspace = this.connectionManager.loadGraphWorkspace(
-                this.connectionManager.getCurrentSchema(), "SSP");
+        HanaGraphWorkspace sspWorkspace = connectionManager.loadGraphWorkspace(
+                connectionManager.getCurrentSchema(), "SSP");
 
         Assert.assertNotNull(sspWorkspace);
         Assert.assertEquals(6, sspWorkspace.edgeTable.size());
@@ -56,7 +64,7 @@ public class HanaConnectionManagerTest {
 
     @Test
     public void loadGraphWorkspaceWithGeometries(){
-        HanaGraphWorkspace flightsWorkspace = this.connectionManager.loadGraphWorkspace(
+        HanaGraphWorkspace flightsWorkspace = connectionManager.loadGraphWorkspace(
                 this.connectionManager.getCurrentSchema(), "FLIGHTS");
 
         Assert.assertNotNull(flightsWorkspace);
@@ -67,8 +75,8 @@ public class HanaConnectionManagerTest {
     @Test
     public void listGraphWorkspace(){
 
-        List<HanaDbObject> workspaceList = this.connectionManager.listGraphWorkspaces();
-        String currentSchema = this.connectionManager.getCurrentSchema();
+        List<HanaDbObject> workspaceList = connectionManager.listGraphWorkspaces();
+        String currentSchema = connectionManager.getCurrentSchema();
 
         boolean foundTestWorkspace = false;
         for(HanaDbObject ws : workspaceList){
