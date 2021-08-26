@@ -52,7 +52,7 @@ public class HanaConnectionManagerTestUtils {
      *
      * @param conMgr
      */
-    public static void createSspGraph(HanaConnectionManager conMgr){
+    public static void createSspGraph(HanaConnectionManager conMgr) throws SQLException {
         // TODO move to some sql script file
         conMgr.execute("DROP TABLE SSP_NODES");
         if(conMgr.execute("CREATE TABLE SSP_NODES (ID INTEGER UNIQUE NOT NULL, NAME NVARCHAR(255))")){
@@ -83,7 +83,7 @@ public class HanaConnectionManagerTestUtils {
                 "\tWITH DYNAMIC CACHE");
     }
 
-    public static void createFlightsGraph(HanaConnectionManager conMgr){
+    public static void createFlightsGraph(HanaConnectionManager conMgr) throws SQLException {
         // TODO move to some sql script file
         conMgr.execute("DROP GRAPH WORKSPACE FLIGHTS");
         conMgr.execute("DROP TABLE FLIGHTS_EDGES");

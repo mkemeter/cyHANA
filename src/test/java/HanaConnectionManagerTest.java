@@ -6,6 +6,7 @@ import org.kemeter.cytoscape.internal.hdb.HanaDbObject;
 import org.kemeter.cytoscape.internal.hdb.HanaGraphWorkspace;
 
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.List;
 
 public class HanaConnectionManagerTest {
@@ -13,7 +14,7 @@ public class HanaConnectionManagerTest {
     private static HanaConnectionManager connectionManager;
 
     @BeforeClass
-    public static void setUp() throws IOException {
+    public static void setUp() throws IOException, SQLException {
         connectionManager = HanaConnectionManagerTestUtils.connectToTestInstance();
         HanaConnectionManagerTestUtils.createSspGraph(connectionManager);
         HanaConnectionManagerTestUtils.createFlightsGraph(connectionManager);
@@ -27,7 +28,13 @@ public class HanaConnectionManagerTest {
 
     @Test
     public void testGetCurrentSchema(){
-        String currentSchema = connectionManager.getCurrentSchema();
+        String currentSchema = null;
+
+        try{
+            currentSchema = connectionManager.getCurrentSchema();
+        } catch (SQLException e){
+            Assert.fail();
+        }
 
         Assert.assertNotNull(currentSchema);
         Assert.assertTrue(currentSchema.length() > 0);
@@ -36,10 +43,15 @@ public class HanaConnectionManagerTest {
     @Test
     public void someQuery(){
 
-        List<Object[]> resultList = connectionManager.executeQueryList(
-                "SELECT 'A', 'B' FROM DUMMY UNION SELECT 'C', 'D' FROM DUMMY",
-                null
-        );
+        List<Object[]> resultList = null;
+        try {
+            resultList = connectionManager.executeQueryList(
+                    "SELECT 'A', 'B' FROM DUMMY UNION SELECT 'C', 'D' FROM DUMMY",
+                    null
+            );
+        } catch (SQLException e){
+            Assert.fail();
+        }
 
         if(resultList == null || resultList.size() != 2) Assert.fail();
 
@@ -54,8 +66,12 @@ public class HanaConnectionManagerTest {
 
     @Test
     public void loadGraphWorkspace(){
-        HanaGraphWorkspace sspWorkspace = connectionManager.loadGraphWorkspace(
-                connectionManager.getCurrentSchema(), "SSP");
+        HanaGraphWorkspace sspWorkspace = null;
+        try {
+            sspWorkspace = connectionManager.loadGraphWorkspace(connectionManager.getCurrentSchema(), "SSP");
+        } catch (SQLException e){
+            Assert.fail();
+        }
 
         Assert.assertNotNull(sspWorkspace);
         Assert.assertEquals(6, sspWorkspace.edgeTable.size());
@@ -64,8 +80,12 @@ public class HanaConnectionManagerTest {
 
     @Test
     public void loadGraphWorkspaceWithGeometries(){
-        HanaGraphWorkspace flightsWorkspace = connectionManager.loadGraphWorkspace(
-                this.connectionManager.getCurrentSchema(), "FLIGHTS");
+        HanaGraphWorkspace flightsWorkspace = null;
+        try {
+            flightsWorkspace = connectionManager.loadGraphWorkspace(this.connectionManager.getCurrentSchema(), "FLIGHTS");
+        } catch (SQLException e){
+            Assert.fail();
+        }
 
         Assert.assertNotNull(flightsWorkspace);
         Assert.assertEquals(31, flightsWorkspace.edgeTable.size());
@@ -74,9 +94,15 @@ public class HanaConnectionManagerTest {
 
     @Test
     public void listGraphWorkspace(){
+        List<HanaDbObject> workspaceList = null;
+        String currentSchema = null;
 
-        List<HanaDbObject> workspaceList = connectionManager.listGraphWorkspaces();
-        String currentSchema = connectionManager.getCurrentSchema();
+        try {
+            workspaceList = connectionManager.listGraphWorkspaces();
+            currentSchema = connectionManager.getCurrentSchema();
+        } catch (SQLException e){
+            Assert.fail();
+        }
 
         boolean foundTestWorkspace = false;
         for(HanaDbObject ws : workspaceList){

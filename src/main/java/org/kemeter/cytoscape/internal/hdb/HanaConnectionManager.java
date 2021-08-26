@@ -50,9 +50,7 @@ public class HanaConnectionManager {
      * @param password  Password
      */
     public void connect(String host, String port, String username, String password) throws SQLException {
-
         this.connection = null;
-
         try {
             this.connection = DriverManager.getConnection(
                     "jdbc:sap://" + host + ":" + port + "/?autocommit=true",
@@ -100,7 +98,7 @@ public class HanaConnectionManager {
      * @param statement The statement to execute
      * @return          True, if statement has been executed successfully
      */
-    public boolean execute(String statement){
+    public boolean execute(String statement) throws SQLException {
         try{
             Statement stmt = this.connection.createStatement();
             stmt.execute(statement);
@@ -109,7 +107,7 @@ public class HanaConnectionManager {
             System.err.println("Could not execute statement");
             System.err.println(statement);
             System.err.println(e);
-            return false;
+            throw e;
         }
     }
 
@@ -120,7 +118,7 @@ public class HanaConnectionManager {
      * @param params    SQL parameters
      * @return          The ResultSet of the query; Null in case of errors
      */
-    public ResultSet executeQuery(String statement, HanaSqlParameter[] params){
+    public ResultSet executeQuery(String statement, HanaSqlParameter[] params) throws SQLException {
         try{
             PreparedStatement stmt = this.connection.prepareStatement(statement);
 
@@ -135,7 +133,7 @@ public class HanaConnectionManager {
             System.err.println("Could not execute statement");
             System.err.println(statement);
             System.err.println(e);
-            return null;
+            throw e;
         }
     }
 
@@ -145,7 +143,7 @@ public class HanaConnectionManager {
      * @param statement The statement to execute
      * @return          The result of the query as a list; Null in case of errors
      */
-    public List<Object[]> executeQueryList(String statement){
+    public List<Object[]> executeQueryList(String statement) throws SQLException {
         return this.executeQueryList(statement, null);
     }
 
@@ -156,10 +154,8 @@ public class HanaConnectionManager {
      * @param params    SQL parameters
      * @return          The result of the query as a list; Null in case of errors
      */
-    public List<Object[]> executeQueryList(String statement, HanaSqlParameter[] params){
+    public List<Object[]> executeQueryList(String statement, HanaSqlParameter[] params) throws SQLException {
         ResultSet resultSet = this.executeQuery(statement, params);
-
-        if(resultSet == null) return null;
 
         try {
             ResultSetMetaData metaData = resultSet.getMetaData();
@@ -178,7 +174,7 @@ public class HanaConnectionManager {
             System.err.println("Could not fetch data");
             System.err.println(statement);
             System.err.println(e);
-            return null;
+            throw e;
         }
     }
 
@@ -191,10 +187,8 @@ public class HanaConnectionManager {
      * @param <T>       Template type inferred from class type
      * @return          Single value returned by the query; Null in case of errors
      */
-    public <T> T executeQuerySingleValue(String statement, HanaSqlParameter[] params, Class<T> type){
+    public <T> T executeQuerySingleValue(String statement, HanaSqlParameter[] params, Class<T> type) throws SQLException {
         ResultSet resultSet = this.executeQuery(statement, params);
-
-        if(resultSet == null) return null;
 
         try {
             resultSet.next();
@@ -203,7 +197,7 @@ public class HanaConnectionManager {
             System.err.println("Could not fetch data");
             System.err.println(statement);
             System.err.println(e);
-            return null;
+            throw e;
         }
     }
 
@@ -212,7 +206,7 @@ public class HanaConnectionManager {
      *
      * @return  Name of the currently active schema
      */
-    public String getCurrentSchema(){
+    public String getCurrentSchema() throws SQLException {
         return this.executeQuerySingleValue(this.sqlStrings.getProperty("SELECT_CURRENT_SCHEMA"), null, String.class);
     }
 
@@ -221,7 +215,7 @@ public class HanaConnectionManager {
      *
      * @return  List of all available graph workspaces
      */
-    public List<HanaDbObject> listGraphWorkspaces(){
+    public List<HanaDbObject> listGraphWorkspaces() throws SQLException {
         List<Object[]> resultList = this.executeQueryList(this.sqlStrings.getProperty("LIST_GRAPH_WORKSPACES"));
 
         List<HanaDbObject> workspaceList = new ArrayList<>();
@@ -239,17 +233,19 @@ public class HanaConnectionManager {
      * @param graphWorkspace    HanaGraphWorkspace with pre-populated workspaceDbObject
      * @return                  True, if metadata has been completely loaded
      */
-    private boolean loadWorkspaceMetadata(HanaGraphWorkspace graphWorkspace){
+    private boolean loadWorkspaceMetadata(HanaGraphWorkspace graphWorkspace) throws SQLException {
+        List<Object[]> metadata = null;
 
-        List<Object[]> metadata = this.executeQueryList(
-                this.sqlStrings.getProperty("LOAD_WORKSPACE_METADATA_HANA_CLOUD"),
-                new HanaSqlParameter[]{
-                        new HanaSqlParameter(graphWorkspace.workspaceDbObject.schema, Types.VARCHAR),
-                        new HanaSqlParameter(graphWorkspace.workspaceDbObject.name, Types.VARCHAR)
-                }
-        );
-
-        if(metadata == null) {
+        try {
+            // try with HANA Cloud approach
+            metadata = this.executeQueryList(
+                    this.sqlStrings.getProperty("LOAD_WORKSPACE_METADATA_HANA_CLOUD"),
+                    new HanaSqlParameter[]{
+                            new HanaSqlParameter(graphWorkspace.workspaceDbObject.schema, Types.VARCHAR),
+                            new HanaSqlParameter(graphWorkspace.workspaceDbObject.name, Types.VARCHAR)
+                    }
+            );
+        } catch (SQLException e){
             // assume that this is HANA onprem
             metadata = this.executeQueryList(
                     this.sqlStrings.getProperty("LOAD_WORKSPACE_METADATA_HANA_ONPREM"),
@@ -303,7 +299,7 @@ public class HanaConnectionManager {
      * @param graphWorkspace    HANA Graph Workspace with complete metadata
      * @return                  True, if node table content has been loaded
      */
-    private boolean loadNetworkNodes(HanaGraphWorkspace graphWorkspace){
+    private void loadNetworkNodes(HanaGraphWorkspace graphWorkspace) throws SQLException {
         String attCols = "";
         for(HanaColumnInfo col : graphWorkspace.nodeAttributeCols){
             attCols += ",\"" + col.name + "\"";
@@ -317,8 +313,6 @@ public class HanaConnectionManager {
                 graphWorkspace.nodeKeyCol.table
         ), null);
 
-        if(nodeTable == null) return false;
-
         graphWorkspace.nodeTable = new ArrayList<>();
         for(Object[] row : nodeTable){
             HanaNodeTableRow newRow = new HanaNodeTableRow(toStrNull(row[0]));
@@ -327,7 +321,6 @@ public class HanaConnectionManager {
             }
             graphWorkspace.nodeTable.add(newRow);
         }
-        return true;
     }
 
     /**
@@ -336,7 +329,7 @@ public class HanaConnectionManager {
      * @param graphWorkspace    HANA Graph Workspace with complete metadata
      * @return                  True, if edge table content has been loaded
      */
-    private boolean loadNetworkEdges(HanaGraphWorkspace graphWorkspace){
+    private void loadNetworkEdges(HanaGraphWorkspace graphWorkspace) throws SQLException {
 
         String attCols = "";
         for(HanaColumnInfo col : graphWorkspace.edgeAttributeCols){
@@ -353,8 +346,6 @@ public class HanaConnectionManager {
                 graphWorkspace.edgeKeyCol.table
         ), null);
 
-        if(edgeTable == null) return false;
-
         graphWorkspace.edgeTable = new ArrayList<>();
         for(Object[] row : edgeTable){
             HanaEdgeTableRow newRow = new HanaEdgeTableRow(toStrNull(row[0]), toStrNull(row[1]), toStrNull(row[2]));
@@ -363,7 +354,6 @@ public class HanaConnectionManager {
             }
             graphWorkspace.edgeTable.add(newRow);
         }
-        return true;
     }
 
     /**
@@ -374,19 +364,13 @@ public class HanaConnectionManager {
      * @param graphWorkspaceName    Name of the workspace to be loaded
      * @return                      HanaGraphWorkspace Object
      */
-    public HanaGraphWorkspace loadGraphWorkspace(String schema, String graphWorkspaceName){
+    public HanaGraphWorkspace loadGraphWorkspace(String schema, String graphWorkspaceName) throws SQLException {
         HanaGraphWorkspace graphWorkspace = new HanaGraphWorkspace();
         graphWorkspace.workspaceDbObject = new HanaDbObject(schema, graphWorkspaceName);
 
-        if(!loadWorkspaceMetadata(graphWorkspace)){
-            return null;
-        }
-        if(!loadNetworkNodes(graphWorkspace)){
-            return null;
-        }
-        if(!loadNetworkEdges(graphWorkspace)){
-            return null;
-        }
+        loadWorkspaceMetadata(graphWorkspace);
+        loadNetworkNodes(graphWorkspace);
+        loadNetworkEdges(graphWorkspace);
 
         return graphWorkspace;
     }
@@ -398,7 +382,7 @@ public class HanaConnectionManager {
      * @param graphWorkspace    Schema and Name of the workspace to be loaded
      * @return                  HanaGraphWorkspace Object
      */
-    public HanaGraphWorkspace loadGraphWorkspace(HanaDbObject graphWorkspace){
+    public HanaGraphWorkspace loadGraphWorkspace(HanaDbObject graphWorkspace) throws SQLException {
         return loadGraphWorkspace(graphWorkspace.schema, graphWorkspace.name);
     }
 
