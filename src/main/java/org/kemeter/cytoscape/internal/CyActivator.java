@@ -7,6 +7,7 @@ import org.cytoscape.work.ServiceProperties;
 import org.cytoscape.work.TaskFactory;
 import org.cytoscape.work.swing.GUITunableHandlerFactory;
 import org.cytoscape.work.swing.SimpleGUITunableHandlerFactory;
+import org.kemeter.cytoscape.internal.tasks.CyCreateWorkspaceTaskFactory;
 import org.kemeter.cytoscape.internal.tasks.CyLoadTaskFactory;
 import org.kemeter.cytoscape.internal.tunables.PasswordString;
 import org.kemeter.cytoscape.internal.tunables.PasswordStringGUIHandler;
@@ -43,12 +44,22 @@ public class CyActivator extends AbstractCyActivator {
             connectProps.setProperty(ServiceProperties.MENU_GRAVITY, "1.0");
             registerService(bc, connectFactory, TaskFactory.class, connectProps);
 
+            // create graph workspace from network
+            /*
+            CyCreateWorkspaceTaskFactory createFactory = new CyCreateWorkspaceTaskFactory(networkManager, connectionManager);
+            Properties createProps = new Properties();
+            createProps.setProperty(ServiceProperties.PREFERRED_MENU, "Apps.SAP HANA");
+            createProps.setProperty(ServiceProperties.TITLE, "Create Graph Workspace from Current Network");
+            createProps.setProperty(ServiceProperties.MENU_GRAVITY, "2.0");
+            registerService(bc, createFactory, TaskFactory.class, createProps);
+            */
+
             // load graph workspace
             CyLoadTaskFactory loadFactory = new CyLoadTaskFactory(networkFactory, networkManager, connectionManager);
             Properties loadProps = new Properties();
             loadProps.setProperty(ServiceProperties.PREFERRED_MENU, "Apps.SAP HANA");
-            loadProps.setProperty(ServiceProperties.TITLE, "Load Graph Workspace");
-            loadProps.setProperty(ServiceProperties.MENU_GRAVITY, "2.0");
+            loadProps.setProperty(ServiceProperties.TITLE, "Load Graph Workspace from Database");
+            loadProps.setProperty(ServiceProperties.MENU_GRAVITY, "3.0");
             registerService(bc, loadFactory, TaskFactory.class, loadProps);
 
             // load result of openCypher query

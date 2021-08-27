@@ -19,9 +19,19 @@ public class HanaColumnInfo{
      */
     public String name;
 
-    public HanaColumnInfo(String schema, String table, String name){
+    /**
+     *
+     */
+    public boolean primaryKey;
+
+    public HanaColumnInfo(String schema, String table, String name) {
+        this(schema, table, name, false);
+    }
+
+    public HanaColumnInfo(String schema, String table, String name, boolean primaryKey){
         this.schema = schema;
         this.table = table;
         this.name = name;
+        this.primaryKey = primaryKey;
     }
 }

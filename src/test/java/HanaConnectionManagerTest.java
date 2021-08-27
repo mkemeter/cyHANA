@@ -1,14 +1,13 @@
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.kemeter.cytoscape.internal.hdb.HanaConnectionCredentials;
-import org.kemeter.cytoscape.internal.hdb.HanaConnectionManager;
-import org.kemeter.cytoscape.internal.hdb.HanaDbObject;
-import org.kemeter.cytoscape.internal.hdb.HanaGraphWorkspace;
+import org.kemeter.cytoscape.internal.hdb.*;
 import org.kemeter.cytoscape.internal.utils.IOUtils;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 
@@ -177,5 +176,30 @@ public class HanaConnectionManagerTest {
         } catch (SQLException e){
             Assert.fail();
         }
+    }
+
+    @Test
+    public void testCreateTable(){
+        try {
+            String newTableName = "TEST_DELETEME";
+            HanaDbObject newTable = new HanaDbObject(connectionManager.getCurrentSchema(), newTableName);
+            List<HanaColumnInfo> newCols = Arrays.asList(
+                    new HanaColumnInfo(newTable.schema, newTable.name, "COL1"),
+                    new HanaColumnInfo(newTable.schema, newTable.name, "COL2"),
+                    new HanaColumnInfo(newTable.schema, newTable.name, "COL3")
+            );
+
+            connectionManager.createTable(newTable, newCols);
+
+            connectionManager.execute(String.format(
+                    sqlStringsTest.getProperty("DROP_TABLE"),
+                    newTable.schema,
+                    newTable.name
+            ));
+
+        } catch (SQLException e){
+            Assert.fail();
+        }
+
     }
 }

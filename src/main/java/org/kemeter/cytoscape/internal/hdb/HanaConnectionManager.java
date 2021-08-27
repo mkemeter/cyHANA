@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 import org.slf4j.LoggerFactory;
@@ -451,6 +452,82 @@ public class HanaConnectionManager {
      */
     public void createSchema(String schema) throws SQLException {
         execute(String.format(sqlStrings.getProperty("CREATE_SCHEMA"), schema));
+    }
+
+    /**
+     *
+     * @param newTableLocation
+     * @param newCols
+     * @throws SQLException
+     */
+    public void createTable(HanaDbObject newTableLocation, List<HanaColumnInfo> newCols) throws SQLException {
+        String fieldList = "";
+        for(HanaColumnInfo col : newCols){
+            fieldList +=
+                    "\"" + col.name + "\" NVARCHAR(5000)" + (col.primaryKey?" PRIMARY KEY":"") + ",";
+        }
+        fieldList = fieldList.substring(0, fieldList.length() - 1);
+
+        String createStmt = String.format(
+                this.sqlStrings.getProperty("CREATE_TABLE"),
+                newTableLocation.schema,
+                newTableLocation.name,
+                fieldList
+        );
+
+        this.execute(createStmt);
+    }
+
+
+    public void bulkInsertData(HanaDbObject targetTable, List<HanaColumnInfo> columnInfos, List<Map<String, Object>> data) throws SQLException {
+
+        String fields = "";
+        String values = "";
+        for(HanaColumnInfo colInfo : columnInfos){
+            fields += "\"" + colInfo.name + "\",";
+            values += "?,";
+        }
+        fields = fields.substring(0, fields.length()-1);
+        values = values.substring(0, values.length()-1);
+
+        String insertStatement = String.format(
+                this.sqlStrings.getProperty("INSERT_INTO_TABLE"),
+                targetTable.schema,
+                targetTable.name,
+                fields,
+                values
+        );
+
+        ArrayList<HanaSqlParameter[]> batchParams = new ArrayList<>();
+
+        for(Map<String, Object> record : data){
+            HanaSqlParameter[] recordParams = new HanaSqlParameter[columnInfos.size()];
+            int i=0;
+            for(HanaColumnInfo colInfo : columnInfos){
+                Object objValue = record.get(colInfo.name);
+                recordParams[i++] = new HanaSqlParameter(objValue == null ? null : objValue.toString(), Types.VARCHAR);
+            }
+            batchParams.add(recordParams);
+        }
+
+        executeBatch(insertStatement, batchParams);
+    }
+
+    private void executeBatch(String statement, List<HanaSqlParameter[]> batchParameter) throws SQLException {
+        PreparedStatement batchStmt = this.connection.prepareStatement(statement);
+
+        for(HanaSqlParameter[] recordParameter : batchParameter){
+            for(int i=0; i<recordParameter.length; i++){
+                Object value = recordParameter[i].parameterValue;
+                if(value == null){
+                    batchStmt.setNull(i+1, Types.VARCHAR);
+                }else{
+                    batchStmt.setString(i+1, value.toString());
+                }
+            }
+            batchStmt.addBatch();
+        }
+        batchStmt.executeBatch();
     }
 
 }
