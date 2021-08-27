@@ -168,4 +168,14 @@ public class HanaConnectionManagerTest {
 
         if(!foundTestWorkspace) Assert.fail();
     }
+
+    @Test
+    public void testSchemaExists(){
+        try {
+            Assert.assertTrue(connectionManager.schemaExists("SYS"));
+            Assert.assertFalse(connectionManager.schemaExists("THIS_SCHEMA_DOES_NOT_EXIST"));
+        } catch (SQLException e){
+            Assert.fail();
+        }
+    }
 }

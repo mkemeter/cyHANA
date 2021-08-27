@@ -426,5 +426,31 @@ public class HanaConnectionManager {
         return loadGraphWorkspace(graphWorkspace.schema, graphWorkspace.name);
     }
 
+    /**
+     *
+     * @param schema
+     * @return
+     * @throws SQLException
+     */
+    public boolean schemaExists(String schema) throws SQLException {
+        int schemaExists = executeQuerySingleValue(
+                sqlStrings.getProperty("SCHEMA_EXISTS"),
+                new HanaSqlParameter[]{
+                        new HanaSqlParameter(schema, Types.VARCHAR)
+                },
+                Integer.class
+        );
+
+        return schemaExists > 0;
+    }
+
+    /**
+     *
+     * @param schema
+     * @throws SQLException
+     */
+    public void createSchema(String schema) throws SQLException {
+        execute(String.format(sqlStrings.getProperty("CREATE_SCHEMA"), schema));
+    }
 
 }
