@@ -5,6 +5,7 @@ import org.cytoscape.work.ProvidesTitle;
 import org.cytoscape.work.TaskMonitor;
 import org.cytoscape.work.Tunable;
 import org.kemeter.cytoscape.internal.hdb.HanaConnectionManager;
+import org.kemeter.cytoscape.internal.tunables.PasswordString;
 import org.kemeter.cytoscape.internal.utils.IOUtils;
 import org.kemeter.cytoscape.internal.hdb.HanaConnectionCredentials;
 
@@ -43,11 +44,9 @@ public class CyConnectTask extends AbstractTask {
 
     /**
      * User password
-     *
-     * TODO can we have a masked input field?
      */
     @Tunable(description="Password", groups={"User Credentials"}, required = true, gravity = 4)
-    public String password;
+    public PasswordString password;
 
     /**
      * Checkbox if password shall be stored in an unsecure way
@@ -75,11 +74,11 @@ public class CyConnectTask extends AbstractTask {
             this.host = cachedCredentials.host;
             this.port = cachedCredentials.port;
             this.username = cachedCredentials.username;
-            this.password = cachedCredentials.password;
+            this.password = new PasswordString(cachedCredentials.password);
 
             // assume that the user still wants to store the password, if this
             // has been done before
-            this.savePassword = this.password.length() > 0;
+            this.savePassword = this.password.getPassword().length() > 0;
 
         }catch (IOException e){
             // file was probably not yet existing
@@ -100,7 +99,7 @@ public class CyConnectTask extends AbstractTask {
         taskMonitor.setProgress(0d);
 
         HanaConnectionCredentials cred = new HanaConnectionCredentials(
-                this.host, this.port, this.username, this.password
+                this.host, this.port, this.username, this.password.getPassword()
         );
 
         // save credentials to properties file

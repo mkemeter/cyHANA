@@ -5,7 +5,11 @@ import org.cytoscape.model.CyNetworkManager;
 import org.cytoscape.service.util.AbstractCyActivator;
 import org.cytoscape.work.ServiceProperties;
 import org.cytoscape.work.TaskFactory;
+import org.cytoscape.work.swing.GUITunableHandlerFactory;
+import org.cytoscape.work.swing.SimpleGUITunableHandlerFactory;
 import org.kemeter.cytoscape.internal.tasks.CyLoadTaskFactory;
+import org.kemeter.cytoscape.internal.tunables.PasswordString;
+import org.kemeter.cytoscape.internal.tunables.PasswordStringGUIHandler;
 import org.osgi.framework.BundleContext;
 import org.kemeter.cytoscape.internal.hdb.HanaConnectionManager;
 import org.kemeter.cytoscape.internal.tasks.CyConnectTaskFactory;
@@ -22,6 +26,11 @@ public class CyActivator extends AbstractCyActivator {
         // fetch api stuff
         CyNetworkFactory networkFactory = getService(bc, CyNetworkFactory.class);
         CyNetworkManager networkManager = getService(bc, CyNetworkManager.class);
+
+        // register custom password tunable
+        SimpleGUITunableHandlerFactory<PasswordStringGUIHandler> passwordHandlerFactory = new SimpleGUITunableHandlerFactory<>(
+                PasswordStringGUIHandler.class, PasswordString.class);
+        registerService(bc, passwordHandlerFactory, GUITunableHandlerFactory.class);
 
         try {
             HanaConnectionManager connectionManager = new HanaConnectionManager();
@@ -42,7 +51,7 @@ public class CyActivator extends AbstractCyActivator {
             loadProps.setProperty(ServiceProperties.MENU_GRAVITY, "2.0");
             registerService(bc, loadFactory, TaskFactory.class, loadProps);
 
-            // load result of OpenCypher query
+            // load result of openCypher query
 
             // load single node (for later exploration via context menu)
 
