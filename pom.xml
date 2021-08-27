@@ -87,18 +87,6 @@
     </build>
 
     <dependencies>
-
-        <dependency>
-            <groupId>org.ops4j.pax.logging</groupId>
-            <artifactId>pax-logging-api</artifactId>
-            <version>2.0.10</version>
-        </dependency>
-        <dependency>
-            <groupId>org.ops4j.pax.logging</groupId>
-            <artifactId>pax-logging-service</artifactId>
-            <version>1.11.9</version>
-        </dependency>
-
         <dependency>
             <groupId>org.cytoscape</groupId>
             <artifactId>application-api</artifactId>
@@ -133,6 +121,11 @@
             <groupId>com.sap.cloud.db.jdbc</groupId>
             <artifactId>ngdbc</artifactId>
             <version>2.9.16</version>
+        </dependency>
+        <dependency>
+            <groupId>org.ops4j.pax.logging</groupId>
+            <artifactId>pax-logging-api</artifactId>
+            <version>1.10.1</version>
         </dependency>
     </dependencies>
 

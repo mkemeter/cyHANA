@@ -18,4 +18,8 @@ public class HanaDbObject {
         this.schema = schema;
         this.name = name;
     }
+
+    public String toString(){
+        return '"' + this.schema + "\".\"" + this.name+'"';
+    }
 }
