@@ -12,3 +12,4 @@ src/main/resources/testcredentials.properties
 .idea/
 .DS_Store
 local/
+src/test/resources/testcredentials.properties
