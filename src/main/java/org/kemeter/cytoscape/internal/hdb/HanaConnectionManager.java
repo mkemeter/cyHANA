@@ -24,6 +24,16 @@ public class HanaConnectionManager {
     }
 
     /**
+     * Method to parse a build string
+     */
+    public static boolean isCloudEdition(String buildStr){
+        if (buildStr==null){
+            return false;
+        }
+        return buildStr.contains("/CE");
+    }
+
+    /**
      * Internal connection object
      */
     private Connection connection;
@@ -32,6 +42,13 @@ public class HanaConnectionManager {
      * Holding all SQL statement that are required
      */
     private Properties sqlStrings;
+
+    /**
+     * HANA version and edition (Cloud, On prem)
+     * For instance HANA Cloud: fa/CE2021.18
+     * HANA on prem: fa/hana2sp05
+     */
+    protected String buildVersion;
 
     /**
      * Default constructor
@@ -56,8 +73,11 @@ public class HanaConnectionManager {
                     "jdbc:sap://" + host + ":" + port + "/?autocommit=true",
                     username, password);
 
-            System.out.println("Connected to HANA database: ");
-            System.out.println(host);
+            if (this.connection.isValid(1500)){
+                this.buildVersion = this.executeQuerySingleValue(this.sqlStrings.getProperty("GET_BUILD"), null, String.class);
+            }
+
+            System.out.println("Connected to HANA database: "+host+" ("+this.buildVersion+")");
         } catch (SQLException e) {
             System.err.println("Error connecting to HANA instance:");
             System.err.println(e);
@@ -110,6 +130,17 @@ public class HanaConnectionManager {
             throw e;
         }
     }
+    /**
+     * Executes a statement on the database and doesn't return any error nor throw exception
+     *
+     * @param statement The statement to execute
+     */
+    public void executeNoException(String statement) {
+        try{
+            Statement stmt = this.connection.createStatement();
+            stmt.execute(statement);
+        } catch (SQLException e){ }
+    }    
 
     /**
      * Executes a query statement on the database
@@ -211,6 +242,15 @@ public class HanaConnectionManager {
     }
 
     /**
+     * Retrieves the current version of the database
+     *
+     * @return  Name of the currently active schema
+     */
+    public String getHANABuild(){
+        return this.buildVersion;
+    }
+
+    /**
      * Retrieves a list of all graph workspaces on the SAP HANA instance
      *
      * @return  List of all available graph workspaces
@@ -235,27 +275,17 @@ public class HanaConnectionManager {
      */
     private boolean loadWorkspaceMetadata(HanaGraphWorkspace graphWorkspace) throws SQLException {
         List<Object[]> metadata = null;
-
-        try {
-            // try with HANA Cloud approach
-            metadata = this.executeQueryList(
-                    this.sqlStrings.getProperty("LOAD_WORKSPACE_METADATA_HANA_CLOUD"),
+        String propName="LOAD_WORKSPACE_METADATA_HANA_";
+        propName+=(HanaConnectionManager.isCloudEdition(this.buildVersion))? "CLOUD":"ONPREM";
+        
+        metadata = this.executeQueryList(
+                    this.sqlStrings.getProperty(propName),
                     new HanaSqlParameter[]{
                             new HanaSqlParameter(graphWorkspace.workspaceDbObject.schema, Types.VARCHAR),
                             new HanaSqlParameter(graphWorkspace.workspaceDbObject.name, Types.VARCHAR)
                     }
             );
-        } catch (SQLException e){
-            // assume that this is HANA onprem
-            metadata = this.executeQueryList(
-                    this.sqlStrings.getProperty("LOAD_WORKSPACE_METADATA_HANA_ONPREM"),
-                    new HanaSqlParameter[]{
-                            new HanaSqlParameter(graphWorkspace.workspaceDbObject.schema, Types.VARCHAR),
-                            new HanaSqlParameter(graphWorkspace.workspaceDbObject.name, Types.VARCHAR)
-                    }
-            );
-        }
-
+        
         for(Object[] row : metadata){
             HanaColumnInfo newColInfo = new HanaColumnInfo(toStrNull(row[2]), toStrNull(row[3]), toStrNull(row[4]));
             switch(toStrNull(row[0])){
