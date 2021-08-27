@@ -37,6 +37,7 @@ public class HanaConnectionManager {
     private static String quoteIdentifier(String id){
         return '"'+id+'"';
     }
+
     /**
      * Method to parse a build string
      */
@@ -464,7 +465,7 @@ public class HanaConnectionManager {
         String fieldList = "";
         for(HanaColumnInfo col : newCols){
             fieldList +=
-                    "\"" + col.name + "\" NVARCHAR(5000)" + (col.primaryKey?" PRIMARY KEY":"") + ",";
+                    quoteIdentifier(col.name) + " NVARCHAR(5000)" + (col.primaryKey?" PRIMARY KEY":"") + ",";
         }
         fieldList = fieldList.substring(0, fieldList.length() - 1);
 
@@ -484,7 +485,7 @@ public class HanaConnectionManager {
         String fields = "";
         String values = "";
         for(HanaColumnInfo colInfo : columnInfos){
-            fields += "\"" + colInfo.name + "\",";
+            fields += quoteIdentifier(colInfo.name) + ",";
             values += "?,";
         }
         fields = fields.substring(0, fields.length()-1);
