@@ -143,6 +143,11 @@
             <artifactId>ngdbc</artifactId>
             <version>2.9.16</version>
         </dependency>
+        <dependency>
+            <groupId>org.ops4j.pax.logging</groupId>
+            <artifactId>pax-logging-api</artifactId>
+            <version>1.10.1</version>
+        </dependency>
     </dependencies>
 
     <distributionManagement>

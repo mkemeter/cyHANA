@@ -8,10 +8,19 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
+import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+
 /**
  * Handles communication with the database and SAP HANA specific stuff
  */
 public class HanaConnectionManager {
+
+    private static Logger logger = LoggerFactory.getLogger("org.cytoscape.application.userlog");
+    public static void debug(String msg){ logger.debug(" HANA "+msg); }
+    public static void info(String msg){  logger.info( " HANA "+msg); }
+    public static void warn(String msg){  logger.warn( " HANA "+msg); }
+    public static void err(String msg){   logger.error(" HANA "+msg); }
 
     /**
      *  Helper function to handle the String representation of DB null values
@@ -23,6 +32,10 @@ public class HanaConnectionManager {
         return obj == null ? "DB_NULL" : obj.toString();
     }
 
+
+    private static String quoteIdentifier(String id){
+        return '"'+id+'"';
+    }
     /**
      * Method to parse a build string
      */
@@ -77,10 +90,10 @@ public class HanaConnectionManager {
                 this.buildVersion = this.executeQuerySingleValue(this.sqlStrings.getProperty("GET_BUILD"), null, String.class);
             }
 
-            System.out.println("Connected to HANA database: "+host+" ("+this.buildVersion+")");
+            info("Connected to HANA database: "+host+" ("+this.buildVersion+")");
         } catch (SQLException e) {
-            System.err.println("Error connecting to HANA instance:");
-            System.err.println(e);
+            err("Error connecting to HANA instance:"+host);
+            err(e.toString());
             throw e;
         }
     }
@@ -124,9 +137,8 @@ public class HanaConnectionManager {
             stmt.execute(statement);
             return true;
         } catch (SQLException e){
-            System.err.println("Could not execute statement");
-            System.err.println(statement);
-            System.err.println(e);
+            err("Could not execute statement: " + statement);
+            err(e.toString());
             throw e;
         }
     }
@@ -161,9 +173,8 @@ public class HanaConnectionManager {
 
             return stmt.executeQuery();
         } catch (SQLException e){
-            System.err.println("Could not execute statement");
-            System.err.println(statement);
-            System.err.println(e);
+            err("Could not execute statement: " + statement );
+            err(e.getMessage());
             throw e;
         }
     }
@@ -202,9 +213,8 @@ public class HanaConnectionManager {
 
             return resultList;
         } catch (SQLException e) {
-            System.err.println("Could not fetch data");
-            System.err.println(statement);
-            System.err.println(e);
+            err("Could not fetch data. " + statement);
+            err(e.toString());
             throw e;
         }
     }
@@ -225,9 +235,8 @@ public class HanaConnectionManager {
             resultSet.next();
             return resultSet.getObject(1, type);
         } catch (SQLException e) {
-            System.err.println("Could not fetch data");
-            System.err.println(statement);
-            System.err.println(e);
+            err("Could not fetch data. " + statement);
+            err(e.toString());
             throw e;
         }
     }
@@ -277,7 +286,7 @@ public class HanaConnectionManager {
         List<Object[]> metadata = null;
         String propName="LOAD_WORKSPACE_METADATA_HANA_";
         propName+=(HanaConnectionManager.isCloudEdition(this.buildVersion))? "CLOUD":"ONPREM";
-        
+        debug("Reading graph metadata with "+propName);
         metadata = this.executeQueryList(
                     this.sqlStrings.getProperty(propName),
                     new HanaSqlParameter[]{
@@ -317,7 +326,7 @@ public class HanaConnectionManager {
         }
 
         if(!graphWorkspace.isMetadataComplete()){
-            System.err.println("Incomplete graph workspace definition in GRAPH_WORKSPACE_COLUMNS");
+            err("Incomplete graph workspace definition in GRAPH_WORKSPACE_COLUMNS");
             return false;
         }
         return true;
@@ -330,9 +339,10 @@ public class HanaConnectionManager {
      * @return                  True, if node table content has been loaded
      */
     private void loadNetworkNodes(HanaGraphWorkspace graphWorkspace) throws SQLException {
+        info("Loading network nodes of "+graphWorkspace.workspaceDbObject.toString());
         String attCols = "";
         for(HanaColumnInfo col : graphWorkspace.nodeAttributeCols){
-            attCols += ",\"" + col.name + "\"";
+            attCols += ", " + quoteIdentifier(col.name);
         }
 
         List<Object[]> nodeTable = this.executeQueryList(String.format(
@@ -360,10 +370,10 @@ public class HanaConnectionManager {
      * @return                  True, if edge table content has been loaded
      */
     private void loadNetworkEdges(HanaGraphWorkspace graphWorkspace) throws SQLException {
-
+        info("Loading network edges of "+graphWorkspace.workspaceDbObject.toString());
         String attCols = "";
         for(HanaColumnInfo col : graphWorkspace.edgeAttributeCols){
-            attCols += ",\"" + col.name + "\"";
+            attCols += ", " + quoteIdentifier(col.name) ;
         }
 
         List<Object[]> edgeTable = this.executeQueryList(String.format(
