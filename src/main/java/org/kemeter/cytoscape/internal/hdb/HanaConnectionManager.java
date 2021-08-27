@@ -273,18 +273,19 @@ public class HanaConnectionManager {
      * @param graphWorkspace    HanaGraphWorkspace with pre-populated workspaceDbObject
      * @return                  True, if metadata has been completely loaded
      */
-    private boolean loadWorkspaceMetadata(HanaGraphWorkspace graphWorkspace) throws SQLException{
-
+    private boolean loadWorkspaceMetadata(HanaGraphWorkspace graphWorkspace) throws SQLException {
+        List<Object[]> metadata = null;
         String propName="LOAD_WORKSPACE_METADATA_HANA_";
         propName+=(HanaConnectionManager.isCloudEdition(this.buildVersion))? "CLOUD":"ONPREM";
-        List<Object[]> metadata=this.executeQueryList(
+        
+        metadata = this.executeQueryList(
                     this.sqlStrings.getProperty(propName),
                     new HanaSqlParameter[]{
                             new HanaSqlParameter(graphWorkspace.workspaceDbObject.schema, Types.VARCHAR),
                             new HanaSqlParameter(graphWorkspace.workspaceDbObject.name, Types.VARCHAR)
                     }
-        );
-
+            );
+        
         for(Object[] row : metadata){
             HanaColumnInfo newColInfo = new HanaColumnInfo(toStrNull(row[2]), toStrNull(row[3]), toStrNull(row[4]));
             switch(toStrNull(row[0])){
