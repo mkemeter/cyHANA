@@ -28,7 +28,7 @@ public class CyLoadTask extends AbstractTask {
     /**
      * Dropdown box for selection of graph workspace. Will be pre-populated on the constructor.
      */
-    @Tunable(description="Schema/Name", groups = {"Graph Workspace"}, required = true, params="lookup=contains")
+    @Tunable(description="Schema/Name", groups = {"Graph Workspace"}, required = true, params="lookup=contains", gravity=1)
     public ListSingleSelection<String> workspaceSelection;
 
     /**
@@ -90,12 +90,13 @@ public class CyLoadTask extends AbstractTask {
     @Override
     public void run(TaskMonitor taskMonitor) throws Exception {
 
-        taskMonitor.setTitle("SAP HANA Network Creation");
+        taskMonitor.setTitle("SAP HANA: Load Graph Workspace");
         taskMonitor.setProgress(0d);
+
+        taskMonitor.setStatusMessage("Starting to load Graph Workspace");
 
         if(!this.connectionManager.isConnected()){
             // user has not yet executed the connect task
-            // TODO should we execute it on behalf of the user? is that even possible?
             taskMonitor.showMessage(
                     TaskMonitor.Level.ERROR,
                     "Connection to SAP HANA has not been established. Please connect first."

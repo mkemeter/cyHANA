@@ -95,8 +95,10 @@ public class CyConnectTask extends AbstractTask {
     @Override
     public void run(TaskMonitor taskMonitor) throws Exception {
 
-        taskMonitor.setTitle("SAP HANA Connection");
+        taskMonitor.setTitle("SAP HANA: Connect Database");
         taskMonitor.setProgress(0d);
+
+        taskMonitor.setStatusMessage("Starting to establish connection to " + this.host);
 
         HanaConnectionCredentials cred = new HanaConnectionCredentials(
                 this.host, this.port, this.username, this.password.getPassword()
