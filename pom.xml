@@ -19,6 +19,7 @@
 
         <cytoscape.api.version>3.8.1</cytoscape.api.version>
         <osgi.api.version>4.2.0</osgi.api.version>
+        <pax.logging.version>1.11.9</pax.logging.version>
 
         <maven.compiler.source>16</maven.compiler.source>
         <maven.compiler.target>16</maven.compiler.target>
@@ -106,6 +107,26 @@
             <groupId>org.cytoscape</groupId>
             <artifactId>session-api</artifactId>
             <version>${cytoscape.api.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.cytoscape</groupId>
+            <artifactId>swing-app-api</artifactId>
+            <version>${cytoscape.api.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.cytoscape</groupId>
+            <artifactId>command-executor-impl</artifactId>
+            <version>${cytoscape.api.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.ops4j.pax.logging</groupId>
+            <artifactId>pax-logging-api</artifactId>
+            <version>${pax.logging.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.ops4j.pax.logging</groupId>
+            <artifactId>pax-logging-service</artifactId>
+            <version>${pax.logging.version}</version>
         </dependency>
         <dependency>
             <groupId>org.osgi</groupId>
