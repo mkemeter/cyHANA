@@ -8,6 +8,7 @@ import org.cytoscape.work.Tunable;
 import org.cytoscape.work.util.ListSingleSelection;
 import org.kemeter.cytoscape.internal.hdb.*;
 
+import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -51,24 +52,29 @@ public class CyLoadTask extends AbstractTask {
             CyNetworkFactory networkFactory,
             CyNetworkManager networkManager,
             HanaConnectionManager connectionManager
-    ){
+    ) {
         this.networkFactory = networkFactory;
         this.networkManager = networkManager;
         this.connectionManager = connectionManager;
 
         if(this.connectionManager.isConnected()){
-            List<HanaDbObject> workspaceList = this.connectionManager.listGraphWorkspaces();
-            graphWorkspaces = new HashMap<>();
 
-            for(HanaDbObject ws : workspaceList){
-                String namedItem = ws.schema + "." + ws.name;
-                graphWorkspaces.put(namedItem, ws);
+            try {
+                List<HanaDbObject> workspaceList = this.connectionManager.listGraphWorkspaces();
+                graphWorkspaces = new HashMap<>();
+
+                for (HanaDbObject ws : workspaceList) {
+                    String namedItem = ws.schema + "." + ws.name;
+                    graphWorkspaces.put(namedItem, ws);
+                }
+                // pre-populate available workspaces
+                String[] wsArray = graphWorkspaces.keySet().toArray(new String[0]);
+                Arrays.sort(wsArray);
+                this.workspaceSelection = new ListSingleSelection(wsArray);
+            } catch (SQLException e){
+                this.workspaceSelection = new ListSingleSelection<>();
             }
 
-            // pre-populate available workspaces
-            String[] wsArray = graphWorkspaces.keySet().toArray(new String[0]);
-            Arrays.sort(wsArray);
-            this.workspaceSelection = new ListSingleSelection(wsArray);
         }else{
             // since there is no option, Cytoscape will skip the dialog and start the run method.
             this.workspaceSelection = new ListSingleSelection<>();

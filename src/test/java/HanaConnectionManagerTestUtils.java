@@ -2,7 +2,6 @@ import org.kemeter.cytoscape.internal.hdb.HanaConnectionCredentials;
 import org.kemeter.cytoscape.internal.hdb.HanaConnectionManager;
 import org.kemeter.cytoscape.internal.utils.IOUtils;
 
-import java.io.InputStream;
 import java.sql.SQLException;
 import java.util.Properties;
 
@@ -52,9 +51,12 @@ public class HanaConnectionManagerTestUtils {
      *
      * @param conMgr
      */
-    public static void createSspGraph(HanaConnectionManager conMgr){
-        // TODO move to some sql script file
-        conMgr.execute("DROP TABLE SSP_NODES");
+    public static void createSspGraph(HanaConnectionManager conMgr) throws SQLException {
+        
+        conMgr.executeNoException("DROP TABLE SSP_NODES");
+        conMgr.executeNoException("DROP TABLE SSP_EDGES");
+        conMgr.executeNoException("DROP GRAPH WORKSPACE SSP");
+
         if(conMgr.execute("CREATE TABLE SSP_NODES (ID INTEGER UNIQUE NOT NULL, NAME NVARCHAR(255))")){
             conMgr.execute("INSERT INTO SSP_NODES VALUES (1, 'Schere')");
             conMgr.execute("INSERT INTO SSP_NODES VALUES (2, 'Stein')");
@@ -62,7 +64,6 @@ public class HanaConnectionManagerTestUtils {
             conMgr.execute("INSERT INTO SSP_NODES VALUES (4, 'Hulk')");
         }
 
-        conMgr.execute("DROP TABLE SSP_EDGES");
         if(conMgr.execute("CREATE TABLE SSP_EDGES (ID INTEGER UNIQUE NOT NULL, SOURCE_ID INTEGER NOT NULL, SINK_ID INTEGER NOT NULL)")){
             conMgr.execute("INSERT INTO SSP_EDGES VALUES (1, 1, 3)");
             conMgr.execute("INSERT INTO SSP_EDGES VALUES (2, 2, 1)");
@@ -72,22 +73,25 @@ public class HanaConnectionManagerTestUtils {
             conMgr.execute("INSERT INTO SSP_EDGES VALUES (6, 4, 3)");
         }
 
-        conMgr.execute("DROP GRAPH WORKSPACE SSP");
-        conMgr.execute("CREATE GRAPH WORKSPACE SSP\n" +
-                "\tEDGE TABLE SSP_EDGES \n" +
-                "\t\tSOURCE COLUMN SOURCE_ID\n" +
-                "\t\tTARGET COLUMN SINK_ID\n" +
-                "\t\tKEY COLUMN ID\n" +
-                "\tVERTEX TABLE SSP_NODES\n" +
-                "\t\tKEY COLUMN ID\n" +
-                "\tWITH DYNAMIC CACHE");
+        String SQL_CREATE_TEST_WORKSPACE = "CREATE GRAPH WORKSPACE SSP\n" +
+        "\tEDGE TABLE SSP_EDGES \n"+
+        "\tSOURCE COLUMN SOURCE_ID  \n"+
+        "\tTARGET COLUMN SINK_ID  \n"+
+        "\tKEY COLUMN ID \n"+
+        "\tVERTEX TABLE SSP_NODES \n"+
+        "\tKEY COLUMN ID";
+
+        if (HanaConnectionManager.isCloudEdition(conMgr.getHANABuild())){
+           SQL_CREATE_TEST_WORKSPACE+="\n     WITH DYNAMIC CACHE";
+        }
+
+        conMgr.execute(SQL_CREATE_TEST_WORKSPACE);
     }
 
-    public static void createFlightsGraph(HanaConnectionManager conMgr){
-        // TODO move to some sql script file
-        conMgr.execute("DROP GRAPH WORKSPACE FLIGHTS");
-        conMgr.execute("DROP TABLE FLIGHTS_EDGES");
-        conMgr.execute("DROP TABLE FLIGHTS_NODES");
+    public static void createFlightsGraph(HanaConnectionManager conMgr) throws SQLException {
+        conMgr.executeNoException("DROP GRAPH WORKSPACE FLIGHTS");
+        conMgr.executeNoException("DROP TABLE FLIGHTS_EDGES");
+        conMgr.executeNoException("DROP TABLE FLIGHTS_NODES");
 
         conMgr.execute("CREATE TABLE \"FLIGHTS_NODES\" (\n" +
                 "    \"NODE_KEY\" NVARCHAR(100) PRIMARY KEY,\n" +
