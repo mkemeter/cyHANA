@@ -1,23 +1,78 @@
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.kemeter.cytoscape.internal.hdb.HanaConnectionCredentials;
 import org.kemeter.cytoscape.internal.hdb.HanaConnectionManager;
 import org.kemeter.cytoscape.internal.hdb.HanaDbObject;
 import org.kemeter.cytoscape.internal.hdb.HanaGraphWorkspace;
+import org.kemeter.cytoscape.internal.utils.IOUtils;
 
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Properties;
 
 public class HanaConnectionManagerTest {
 
     private static HanaConnectionManager connectionManager;
+    private static Properties sqlStringsTest;
+
+    /**
+     *
+     * @return
+     */
+    private static HanaConnectionCredentials getTestCredentials(){
+        try{
+            Properties connectProps = IOUtils.loadResourceProperties("testcredentials.properties");
+
+            HanaConnectionCredentials testCred = new HanaConnectionCredentials(
+                    connectProps.getProperty("host"),
+                    connectProps.getProperty("port"),
+                    connectProps.getProperty("username"),
+                    connectProps.getProperty("password")
+            );
+
+            return testCred;
+        }catch (Exception e){
+            System.err.println("Cannot load connection details for test instance");
+            return null;
+        }
+
+
+    }
+
+    /**
+     *
+     * @return
+     */
+    private static HanaConnectionManager connectToTestInstance() throws SQLException, IOException {
+        HanaConnectionManager connectionManager = new HanaConnectionManager();
+        connectionManager.connect(getTestCredentials());
+        return connectionManager;
+    }
+
+    private static void createSspGraph() throws SQLException {
+        connectionManager.executeNoException(sqlStringsTest.getProperty("DROP_SSP_WORKSPACE"));
+        connectionManager.executeNoException(sqlStringsTest.getProperty("DROP_SSP_TABLES"));
+        connectionManager.execute((sqlStringsTest.getProperty("CREATE_SSP_TABLES")));
+        connectionManager.execute((sqlStringsTest.getProperty("CREATE_SSP_WORKSPACE")));
+    }
+
+    private static void createFlightsGraph() throws SQLException {
+        connectionManager.executeNoException(sqlStringsTest.getProperty("DROP_FLIGHTS_WORKSPACE"));
+        connectionManager.executeNoException(sqlStringsTest.getProperty("DROP_FLIGHTS_TABLES"));
+        connectionManager.execute((sqlStringsTest.getProperty("CREATE_FLIGHTS_TABLES")));
+        connectionManager.execute((sqlStringsTest.getProperty("INSERT_FLIGHTS_TABLES_VALUES")));
+        connectionManager.execute((sqlStringsTest.getProperty("CREATE_FLIGHTS_WORKSPACE")));
+    }
 
     @BeforeClass
     public static void setUp() throws IOException, SQLException {
-        connectionManager = HanaConnectionManagerTestUtils.connectToTestInstance();
-        HanaConnectionManagerTestUtils.createSspGraph(connectionManager);
-        HanaConnectionManagerTestUtils.createFlightsGraph(connectionManager);
+        connectionManager = connectToTestInstance();
+        sqlStringsTest = IOUtils.loadResourceProperties("SqlStringsTest.sql");
+
+        createSspGraph();
+        createFlightsGraph();
     }
 
     @Test
@@ -46,7 +101,7 @@ public class HanaConnectionManagerTest {
         List<Object[]> resultList = null;
         try {
             resultList = connectionManager.executeQueryList(
-                    "SELECT 'A', 'B' FROM DUMMY UNION SELECT 'C', 'D' FROM DUMMY",
+                    sqlStringsTest.getProperty("SOME_QUERY"),
                     null
             );
         } catch (SQLException e){

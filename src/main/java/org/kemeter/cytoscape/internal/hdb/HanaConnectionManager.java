@@ -139,7 +139,7 @@ public class HanaConnectionManager {
         try{
             Statement stmt = this.connection.createStatement();
             stmt.execute(statement);
-        } catch (SQLException e){ }
+        } catch (SQLException e){}
     }    
 
     /**
