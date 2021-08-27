@@ -347,7 +347,7 @@ public class HanaConnectionManager {
 
         List<Object[]> nodeTable = this.executeQueryList(String.format(
                 this.sqlStrings.getProperty("LOAD_NETWORK_NODES"),
-                quoteIdentifier(graphWorkspace.nodeKeyCol.name),
+                graphWorkspace.nodeKeyCol.name,
                 attCols,
                 graphWorkspace.nodeKeyCol.schema,
                 graphWorkspace.nodeKeyCol.table
@@ -378,9 +378,9 @@ public class HanaConnectionManager {
 
         List<Object[]> edgeTable = this.executeQueryList(String.format(
                 this.sqlStrings.getProperty("LOAD_NETWORK_EDGES"),
-                quoteIdentifier(graphWorkspace.edgeKeyCol.name),
-                quoteIdentifier(graphWorkspace.edgeSourceCol.name),
-                quoteIdentifier(graphWorkspace.edgeTargetCol.name),
+                graphWorkspace.edgeKeyCol.name,
+                graphWorkspace.edgeSourceCol.name,
+                graphWorkspace.edgeTargetCol.name,
                 attCols,
                 graphWorkspace.edgeKeyCol.schema,
                 graphWorkspace.edgeKeyCol.table
