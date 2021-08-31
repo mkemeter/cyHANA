@@ -52,8 +52,13 @@ To upload a network, you first need to connect to your instance of SAP HANA as d
 
 To upload a network to SAP HANA, choose the respective entry in the apps menu.
 
-![Cytoscape Sample Sessions](doc/img/create_new_workspace_dialog.png)
+![Creating a new Graph Workspace](doc/img/create_new_workspace_dialog.png)
 
+If you have more than one network loaded in the client, you will see a dropdown list at the top of the dialog. The name of the new workspace as well as the names of node and edge table will be proposed based on the network's name.
+
+You can manually change the proposed names. Just make sure, that none of the objects (i.e. graph workspace, node table, edge table) is already existing on the sytem.
+
+Additionally the dialog lets you specify the target database schema. Optionally the schema will be created if it is not existing yet.
 ### Download an existing Graph Workspace
 To download a graph workspace, you first need to connect to your instance of SAP HANA as described above. When choosing to load graph workspace, the list will already be pre-populated with all graph workspaces, that have been found on the respective system.
 
