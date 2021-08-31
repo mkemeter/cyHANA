@@ -1,15 +1,9 @@
 package org.kemeter.cytoscape.internal.tasks;
 
 import org.cytoscape.model.*;
-import org.cytoscape.work.AbstractTask;
-import org.cytoscape.work.ProvidesTitle;
-import org.cytoscape.work.TaskMonitor;
-import org.cytoscape.work.Tunable;
-import org.cytoscape.work.util.ListSingleSelection;
+import org.cytoscape.work.*;
 import org.kemeter.cytoscape.internal.hdb.*;
 
-import java.sql.SQLException;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
@@ -18,23 +12,8 @@ import java.util.List;
  */
 public class CyLoadTask extends AbstractTask {
 
-    /**
-     *
-     * @return Title of the input parameter dialog
-     */
-    @ProvidesTitle
-    public String getTitle() { return "Select Graph Workspace"; }
-
-    /**
-     * Dropdown box for selection of graph workspace. Will be pre-populated on the constructor.
-     */
-    @Tunable(description="Schema/Name", groups = {"Graph Workspace"}, required = true, params="lookup=contains", gravity=1)
-    public ListSingleSelection<String> workspaceSelection;
-
-    /**
-     * Maps graph workspaces by their name in the tunable dropdown box
-     */
-    private HashMap<String, HanaDbObject> graphWorkspaces;
+    @ContainsTunables
+    public CyLoadTaskTunables tunables;
 
     private final CyNetworkFactory networkFactory;
     private final CyNetworkManager networkManager;
@@ -57,28 +36,7 @@ public class CyLoadTask extends AbstractTask {
         this.networkManager = networkManager;
         this.connectionManager = connectionManager;
 
-        if(this.connectionManager.isConnected()){
-
-            try {
-                List<HanaDbObject> workspaceList = this.connectionManager.listGraphWorkspaces();
-                graphWorkspaces = new HashMap<>();
-
-                for (HanaDbObject ws : workspaceList) {
-                    String namedItem = ws.schema + "." + ws.name;
-                    graphWorkspaces.put(namedItem, ws);
-                }
-                // pre-populate available workspaces
-                String[] wsArray = graphWorkspaces.keySet().toArray(new String[0]);
-                Arrays.sort(wsArray);
-                this.workspaceSelection = new ListSingleSelection(wsArray);
-            } catch (SQLException e){
-                this.workspaceSelection = new ListSingleSelection<>();
-            }
-
-        }else{
-            // since there is no option, Cytoscape will skip the dialog and start the run method.
-            this.workspaceSelection = new ListSingleSelection<>();
-        }
+        this.tunables = new CyLoadTaskTunables(this.connectionManager);
     }
 
     public static void enhanceCyTableWithAttributes(CyTable cyTable, List<HanaColumnInfo> fieldList){
@@ -117,8 +75,8 @@ public class CyLoadTask extends AbstractTask {
         }
 
         // retrieve selected graph workspace
-        String selectedWorkspaceKey = workspaceSelection.getSelectedValue();
-        HanaDbObject selectedWorkspace = graphWorkspaces.get(selectedWorkspaceKey);
+        String selectedWorkspaceKey = tunables.workspaceSelection.getSelectedValue();
+        HanaDbObject selectedWorkspace = tunables.graphWorkspaces.get(selectedWorkspaceKey);
 
         taskMonitor.setStatusMessage("Downloading data from Graph Workspace " + selectedWorkspaceKey + " in SAP HANA");
 

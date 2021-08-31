@@ -1,13 +1,7 @@
 package org.kemeter.cytoscape.internal.tasks;
 
-import org.cytoscape.work.AbstractTask;
-import org.cytoscape.work.ProvidesTitle;
-import org.cytoscape.work.TaskMonitor;
-import org.cytoscape.work.Tunable;
+import org.cytoscape.work.*;
 import org.kemeter.cytoscape.internal.hdb.HanaConnectionManager;
-import org.kemeter.cytoscape.internal.tunables.PasswordString;
-import org.kemeter.cytoscape.internal.utils.IOUtils;
-import org.kemeter.cytoscape.internal.hdb.HanaConnectionCredentials;
 
 import java.io.*;
 import java.sql.SQLException;
@@ -17,42 +11,8 @@ import java.sql.SQLException;
  */
 public class CyConnectTask extends AbstractTask {
 
-    /**
-     *
-     * @return Title of the input parameter dialog
-     */
-    @ProvidesTitle
-    public String getTitle() { return "Connect to SAP HANA instance"; }
-
-    /**
-     * host address
-     */
-    @Tunable(description="Host", groups={"SAP HANA Database"}, required = true, gravity = 1)
-    public String host;
-
-    /**
-     * Port number (e.g. 443 for SAP HANA Cloud)
-     */
-    @Tunable(description="Port", groups={"SAP HANA Database"}, required = true, gravity = 2)
-    public String port;
-
-    /**
-     * Database username
-     */
-    @Tunable(description="Username", groups={"User Credentials"}, required = true, gravity = 3)
-    public String username;
-
-    /**
-     * User password
-     */
-    @Tunable(description="Password", groups={"User Credentials"}, required = true, gravity = 4)
-    public PasswordString password;
-
-    /**
-     * Checkbox if password shall be stored in an unsecure way
-     */
-    @Tunable(description="Save Password (plain text)", gravity = 5)
-    public boolean savePassword;
+    @ContainsTunables
+    public CyConnectTaskTunables tunables;
 
     /**
      * Connection manager for database communication
@@ -68,21 +28,7 @@ public class CyConnectTask extends AbstractTask {
             HanaConnectionManager connectionManager
     ){
         this.connectionManager = connectionManager;
-        try{
-            HanaConnectionCredentials cachedCredentials = IOUtils.loadCredentials();
-
-            this.host = cachedCredentials.host;
-            this.port = cachedCredentials.port;
-            this.username = cachedCredentials.username;
-            this.password = new PasswordString(cachedCredentials.password);
-
-            // assume that the user still wants to store the password, if this
-            // has been done before
-            this.savePassword = this.password.getPassword().length() > 0;
-
-        }catch (IOException e){
-            // file was probably not yet existing
-        }
+        this.tunables = new CyConnectTaskTunables();
     }
 
     /**
@@ -98,15 +44,11 @@ public class CyConnectTask extends AbstractTask {
         taskMonitor.setTitle("SAP HANA: Connect Database");
         taskMonitor.setProgress(0d);
 
-        taskMonitor.setStatusMessage("Starting to establish connection to " + this.host);
-
-        HanaConnectionCredentials cred = new HanaConnectionCredentials(
-                this.host, this.port, this.username, this.password.getPassword()
-        );
+        taskMonitor.setStatusMessage("Starting to establish connection to " + tunables.host);
 
         // save credentials to properties file
         try{
-            IOUtils.cacheCredentials(cred, this.savePassword);
+            tunables.saveToCacheFile();
         }catch(IOException e){
             taskMonitor.showMessage(TaskMonitor.Level.ERROR, "Unable to cache login credentials");
             taskMonitor.showMessage(TaskMonitor.Level.ERROR, e.toString());
@@ -114,10 +56,10 @@ public class CyConnectTask extends AbstractTask {
 
         // establish connection
         try{
-            connectionManager.connect(cred);
-            taskMonitor.showMessage(TaskMonitor.Level.INFO, "Successfully connected to " + this.host);
+            connectionManager.connect(tunables.getHanaConnectionCredentials());
+            taskMonitor.showMessage(TaskMonitor.Level.INFO, "Successfully connected to " + tunables.host);
         } catch (SQLException e){
-            taskMonitor.showMessage(TaskMonitor.Level.ERROR, "Could not establish connection to " + this.host);
+            taskMonitor.showMessage(TaskMonitor.Level.ERROR, "Could not establish connection to " + tunables.host);
             taskMonitor.showMessage(TaskMonitor.Level.ERROR, e.toString());
         }
 
