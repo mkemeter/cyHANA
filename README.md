@@ -10,7 +10,8 @@ The plugin is tested to work with [Cytoscape 3.8.2](https://cytoscape.org/), [Sa
 ## Functionalities
 The current feature scope comprises:
 - Establish connection to SAP HANA (Cloud)
-- Load all nodes and edges of an existing (homogeneous) graph workspace
+- Upload a Network to SAP HANA (Cloud)
+- Download an existing (homogeneous) graph workspace to Cytoscape
 
 ## Installation
 ### Download
@@ -43,8 +44,18 @@ You can check the task history of Cytoscape to verify, that the connection has b
 
 ![Task history after successful connection](doc/img/task_history_connection.png)
 
-### Load an existing Graph Workspace
-To load a graph workspace, you first need to connect to your instance of SAP HANA as described above. When choosing to load graph workspace, the list will already be pre-populated with all graph workspaces, that have been found on the respective system.
+### Upload a Network to SAP HANA
+To upload a network, you first need to connect to your instance of SAP HANA as described above. Also, you need to have at least one network existing in Cytoscape.
+
+> If you need a dataset to start testing, you can use one of Cytoscapes samples, that are available on the starter panel. Following screenshots will use the `disease` dataset from the sample session `Styles Demo`.
+![Cytoscape Sample Sessions](doc/img/cytoscape_sample_sessions.png)
+
+To upload a network to SAP HANA, choose the respective entry in the apps menu.
+
+![Cytoscape Sample Sessions](doc/img/create_new_workspace_dialog.png)
+
+### Download an existing Graph Workspace
+To download a graph workspace, you first need to connect to your instance of SAP HANA as described above. When choosing to load graph workspace, the list will already be pre-populated with all graph workspaces, that have been found on the respective system.
 
 ![List of graph workspaces](doc/img/graph_workspace_selection.png)
 
