@@ -15,54 +15,37 @@ public class IOUtils {
         return Paths.get(System.getProperty("user.home"), "cyhana_cache.properties").toString();
     }
 
-    /**
-     *
-     * @param cred
-     * @param savePassword
-     * @throws IOException
-     */
-    public static void cacheCredentials(HanaConnectionCredentials cred, boolean savePassword) throws IOException {
-        cacheCredentials(getCacheFile(), cred, savePassword);
+    public static void cacheProperties(Properties properties) throws IOException {
+        cacheProperties(getCacheFile(), properties);
     }
 
-    /**
-     * Stores current credentials to a properties file. Password will
-     * only be stored, if the respective checkbox has been selected.
-     *
-     * @param file
-     * @param cred
-     * @param savePassword
-     * @throws IOException
-     */
-    public static void cacheCredentials(String file, HanaConnectionCredentials cred, boolean savePassword) throws IOException {
-        Properties credProps = new Properties();
-        credProps.setProperty("hdb.host", cred.host);
-        credProps.setProperty("hdb.port", cred.port);
-        credProps.setProperty("hdb.username", cred.username);
-
-        if (savePassword) {
-            credProps.setProperty("hdb.password", cred.password);
-        } else {
-            // overwrite previously saved passwords
-            credProps.setProperty("hdb.password", "");
-        }
-
+    public static void cacheProperties(String file, Properties properties) throws IOException {
         try (OutputStream output = new FileOutputStream(file)){
-            credProps.store(output, null);
+            properties.store(output, null);
         } catch(IOException e){
-            System.err.println("Cannot store connection credentials");
+            System.err.println("Cannot store properties");
             System.err.println(e);
             throw e;
         }
     }
 
-    /**
-     *
-     * @return
-     * @throws IOException
-     */
-    public static HanaConnectionCredentials loadCredentials() throws IOException {
-        return loadCredentials(getCacheFile());
+    public static Properties loadProperties() throws IOException {
+        return loadProperties(getCacheFile());
+    }
+
+    public static Properties loadProperties(String file) throws IOException {
+        try (InputStream input = new FileInputStream(file)) {
+            // load cached credentials
+            Properties properties = new Properties();
+            properties.load(input);
+            return properties;
+        } catch (IOException e) {
+            // this will happen at least on the first start and is likely
+            // not an issue
+            System.err.println("Cannot load cached connection credentials");
+            System.err.println(e);
+            throw e;
+        }
     }
 
     /**
@@ -102,7 +85,8 @@ public class IOUtils {
      * @throws IOException
      */
     public static void clearCachedCredentials(String file) throws IOException {
-        cacheCredentials(file, new HanaConnectionCredentials("", "", "", ""), true);
+        File fileObject = new File(file);
+        fileObject.delete();
     }
 
     /**

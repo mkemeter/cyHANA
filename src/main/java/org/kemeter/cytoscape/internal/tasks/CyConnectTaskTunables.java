@@ -3,11 +3,11 @@ package org.kemeter.cytoscape.internal.tasks;
 import org.cytoscape.work.ProvidesTitle;
 import org.cytoscape.work.Tunable;
 import org.kemeter.cytoscape.internal.hdb.HanaConnectionCredentials;
-import org.kemeter.cytoscape.internal.hdb.HanaConnectionManager;
 import org.kemeter.cytoscape.internal.tunables.PasswordString;
 import org.kemeter.cytoscape.internal.utils.IOUtils;
 
 import java.io.IOException;
+import java.util.Properties;
 
 public class CyConnectTaskTunables {
     /**
@@ -47,21 +47,26 @@ public class CyConnectTaskTunables {
     @Tunable(description="Save Password (plain text)", gravity = 5)
     public boolean savePassword;
 
+    @Tunable(description="Auto-Connect from Cache", dependsOn = "savePassword=true", gravity = 6)
+    public boolean autoConnect;
+
     /**
      *
      */
     public CyConnectTaskTunables(){
         try{
-            HanaConnectionCredentials cachedCredentials = IOUtils.loadCredentials();
 
-            this.host = cachedCredentials.host;
-            this.port = cachedCredentials.port;
-            this.username = cachedCredentials.username;
-            this.password = new PasswordString(cachedCredentials.password);
+            Properties props = IOUtils.loadProperties();
+
+            this.host = props.getProperty("hdb.host");
+            this.port = props.getProperty("hdb.port");
+            this.username = props.getProperty("hdb.username");
+            this.password = new PasswordString(props.getProperty("hdb.password"));
 
             // assume that the user still wants to store the password, if this
             // has been done before
             this.savePassword = this.password.getPassword().length() > 0;
+            this.autoConnect = Boolean.parseBoolean(props.getProperty("hdb.autoconnect"));
 
         }catch (IOException e){
             // file was probably not yet existing
@@ -83,6 +88,21 @@ public class CyConnectTaskTunables {
      * @throws IOException
      */
     public void saveToCacheFile() throws IOException {
-        IOUtils.cacheCredentials(this.getHanaConnectionCredentials(), this.savePassword);
+
+        Properties credProps = new Properties();
+        credProps.setProperty("hdb.host", this.host);
+        credProps.setProperty("hdb.port", this.port);
+        credProps.setProperty("hdb.username", this.username);
+
+        if (savePassword) {
+            credProps.setProperty("hdb.password", this.password.getPassword());
+        } else {
+            // overwrite previously saved passwords
+            credProps.setProperty("hdb.password", "");
+        }
+
+        credProps.setProperty("hdb.autoconnect", String.valueOf(this.autoConnect));
+
+        IOUtils.cacheProperties(credProps);
     }
 }

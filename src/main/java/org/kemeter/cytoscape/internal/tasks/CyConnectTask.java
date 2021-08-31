@@ -1,6 +1,7 @@
 package org.kemeter.cytoscape.internal.tasks;
 
 import org.cytoscape.work.*;
+import org.kemeter.cytoscape.internal.hdb.HanaConnectionCredentials;
 import org.kemeter.cytoscape.internal.hdb.HanaConnectionManager;
 
 import java.io.*;
@@ -10,6 +11,28 @@ import java.sql.SQLException;
  * The task establishes the connection to an SAP HANA instance
  */
 public class CyConnectTask extends AbstractTask {
+
+    /**
+     * Will establish a connection if credentials have been saved and auto connect is active.
+     * Can be used by other tasks to use auto connect feature.
+     *
+     * @param connectionManager The connection manager to connect
+     * @return  True, if connection is established
+     */
+    public static boolean tryConnect(HanaConnectionManager connectionManager){
+        if (!connectionManager.isConnected()) {
+            CyConnectTaskTunables tunables = new CyConnectTaskTunables();
+            if(tunables.autoConnect){
+                HanaConnectionCredentials cred = tunables.getHanaConnectionCredentials();
+                try {
+                    connectionManager.connect(cred);
+                } catch (SQLException e){
+                    return false;
+                }
+            }
+        }
+        return connectionManager.isConnected();
+    }
 
     @ContainsTunables
     public CyConnectTaskTunables tunables;

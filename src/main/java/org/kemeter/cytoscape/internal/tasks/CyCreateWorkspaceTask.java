@@ -17,6 +17,9 @@ public class CyCreateWorkspaceTask extends AbstractTask {
     public CyCreateWorkspaceTask(CyNetworkManager networkManager, HanaConnectionManager connectionManager){
         this.networkManager = networkManager;
         this.connectionManager = connectionManager;
+
+        CyConnectTask.tryConnect(this.connectionManager);
+
         this.tunables = new CyCreateWorkspaceTaskTunables(this.networkManager, this.connectionManager);
     }
 

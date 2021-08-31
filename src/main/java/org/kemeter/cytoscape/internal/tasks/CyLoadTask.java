@@ -36,6 +36,8 @@ public class CyLoadTask extends AbstractTask {
         this.networkManager = networkManager;
         this.connectionManager = connectionManager;
 
+        CyConnectTask.tryConnect(this.connectionManager);
+
         this.tunables = new CyLoadTaskTunables(this.connectionManager);
     }
 

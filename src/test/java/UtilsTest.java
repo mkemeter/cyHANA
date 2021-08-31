@@ -5,12 +5,13 @@ import org.kemeter.cytoscape.internal.utils.IOUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Properties;
 import java.util.UUID;
 
 public class UtilsTest {
 
     @Test
-    public void testCacheAndRestoreCredentials(){
+    public void testCacheAndRestoreProperties(){
         String testFileAbsPath = "";
         try{
             File testFile = File.createTempFile("cyhana", ".properties");
@@ -20,25 +21,25 @@ public class UtilsTest {
             Assert.fail();
         }
 
-        HanaConnectionCredentials cacheCreds = new HanaConnectionCredentials(
-                UUID.randomUUID().toString(),
-                UUID.randomUUID().toString(),
-                UUID.randomUUID().toString(),
-                UUID.randomUUID().toString()
-        );
+        Properties props = new Properties();
+        int nProps = 10;
+        for (int i=0; i<nProps; i++){
+            props.setProperty(UUID.randomUUID().toString(), UUID.randomUUID().toString());
+        }
 
         try{
-            IOUtils.cacheCredentials(testFileAbsPath, cacheCreds, true);
+            IOUtils.cacheProperties(testFileAbsPath, props);
         }catch (IOException e){
             Assert.fail();
         }
 
         try{
-            HanaConnectionCredentials restoreCreds = IOUtils.loadCredentials(testFileAbsPath);
-            Assert.assertEquals(cacheCreds.host, restoreCreds.host);
-            Assert.assertEquals(cacheCreds.port, restoreCreds.port);
-            Assert.assertEquals(cacheCreds.username, restoreCreds.username);
-            Assert.assertEquals(cacheCreds.password, restoreCreds.password);
+            Properties restoreProps = IOUtils.loadProperties(testFileAbsPath);
+
+            Assert.assertEquals(props.size(), restoreProps.size());
+            for(String key : props.stringPropertyNames()){
+                Assert.assertEquals(props.getProperty(key), restoreProps.getProperty(key));
+            }
 
             IOUtils.clearCachedCredentials(testFileAbsPath);
         }catch(IOException e) {
