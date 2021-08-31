@@ -149,11 +149,13 @@ public class CyLoadTask extends AbstractTask {
         for(HanaNodeTableRow row : graphWorkspace.getNodeTable()){
             CyNode newNode = newNetwork.addNode();
             CyRow newRow = newNetwork.getDefaultNodeTable().getRow(newNode.getSUID());
-            newRow.set("name", row.getKeyValue());
+            newRow.set("name", row.getKeyValue(String.class));
             for(HanaColumnInfo field : graphWorkspace.getNodeFieldList()){
-                newRow.set(field.name, row.getFieldValueToString(field.name));
+                // convert to target type in case an existing cytoscape field is re-used
+                Class fieldType = newNetwork.getDefaultNodeTable().getColumn(field.name).getType();
+                newRow.set(field.name, row.getFieldValueCast(field.name, fieldType));
             }
-            nodesByHanaKey.put(row.getKeyValue(), newNode);
+            nodesByHanaKey.put(row.getKeyValue(String.class), newNode);
 
             taskMonitor.setProgress(progress++ / (double)nGraphObjects);
         }
@@ -162,9 +164,9 @@ public class CyLoadTask extends AbstractTask {
 
         // create edges
         for(HanaEdgeTableRow row: graphWorkspace.getEdgeTable()){
-            CyNode sourceNode = nodesByHanaKey.get(row.getSourceValue());
+            CyNode sourceNode = nodesByHanaKey.get(row.getSourceValue(String.class));
             String sourceNodeName = newNetwork.getDefaultNodeTable().getRow(sourceNode.getSUID()).get("name", String.class);
-            CyNode targetNode = nodesByHanaKey.get(row.getTargetValue());
+            CyNode targetNode = nodesByHanaKey.get(row.getTargetValue(String.class));
             String targetNodeName = newNetwork.getDefaultNodeTable().getRow(targetNode.getSUID()).get("name", String.class);
 
             CyEdge newEdge = newNetwork.addEdge(sourceNode, targetNode, true);
@@ -172,7 +174,9 @@ public class CyLoadTask extends AbstractTask {
 
             newRow.set("name", sourceNodeName + " -> " + targetNodeName);
             for(HanaColumnInfo field : graphWorkspace.getEdgeFieldList()){
-                newRow.set(field.name, row.getFieldValueToString(field.name));
+                // convert to target type in case an existing cytoscape field is re-used
+                Class fieldType = newNetwork.getDefaultEdgeTable().getColumn(field.name).getType();
+                newRow.set(field.name, row.getFieldValueCast(field.name, fieldType));
             }
 
             taskMonitor.setProgress(progress++ / (double)nGraphObjects);

@@ -29,15 +29,15 @@ public class HanaEdgeTableRow extends AbstractHanaGraphTableRow{
         this.targetFieldName = targetFieldName;
     }
 
-    public String getKeyValue(){
-        return this.getFieldValueToString(this.keyFieldName);
+    public <T> T getKeyValue(Class<T> targetClassType){
+        return this.getFieldValueCast(this.keyFieldName, targetClassType);
     }
 
-    public String getSourceValue(){
-        return this.getFieldValueToString(this.sourceFieldName);
+    public <T> T getSourceValue(Class<T> targetClassType){
+        return this.getFieldValueCast(this.sourceFieldName, targetClassType);
     }
 
-    public String getTargetValue(){
-        return this.getFieldValueToString(this.targetFieldName);
+    public <T> T getTargetValue(Class<T> targetClassType){
+        return this.getFieldValueCast(this.targetFieldName, targetClassType);
     }
 }

@@ -31,8 +31,6 @@ public class HanaConnectionManagerTest {
             System.err.println("Cannot load connection details for test instance");
             return null;
         }
-
-
     }
 
     private static HanaConnectionManager connectToTestInstance() throws SQLException, IOException {

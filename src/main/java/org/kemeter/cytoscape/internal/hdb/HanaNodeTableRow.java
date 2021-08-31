@@ -17,7 +17,12 @@ public class HanaNodeTableRow extends AbstractHanaGraphTableRow{
         this.keyFieldName = keyFieldName;
     }
 
-    public String getKeyValue(){
-        return this.getFieldValueToString(this.keyFieldName);
+    public <T> T getKeyValue(Class<T> targetClassType){
+        return this.getFieldValueCast(this.keyFieldName, targetClassType);
     }
+
+    public Object getKeyValueRaw(){
+        return this.getFieldValueRaw(this.keyFieldName);
+    }
+
 }

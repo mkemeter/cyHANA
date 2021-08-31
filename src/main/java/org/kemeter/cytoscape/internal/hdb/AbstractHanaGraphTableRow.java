@@ -23,18 +23,31 @@ public abstract class AbstractHanaGraphTableRow {
         return this.fieldValues;
     }
 
-    public String getFieldValueToString(String fieldName){
+    public <T> T getFieldValueCast(String fieldName, Class<T> targetClassType){
+
+        Object value = getFieldValueRaw(fieldName);
+
+        if (targetClassType.isAssignableFrom(String.class)) {
+            return (T)value;
+        } else if (targetClassType.isAssignableFrom(Integer.class)) {
+            return (T)Integer.valueOf(value.toString());
+        } else if (targetClassType.isAssignableFrom(Long.class)) {
+            return (T)Long.valueOf(value.toString());
+        } else if (targetClassType.isAssignableFrom(Boolean.class)) {
+            return (T)Boolean.valueOf(value.toString());
+        } else if (targetClassType.isAssignableFrom(Double.class)) {
+            return (T)Double.valueOf(value.toString());
+        } else {
+            throw new IllegalArgumentException("Bad type.");
+        }
+    }
+
+    public Object getFieldValueRaw(String fieldName){
         if(!this.fieldValues.containsKey(fieldName)){
             return null;
         }
 
-        Object value = this.fieldValues.get(fieldName);
-
-        try{
-            return value.toString();
-        }catch (Exception e){
-            return null;
-        }
+        return this.fieldValues.get(fieldName);
     }
 
 }
