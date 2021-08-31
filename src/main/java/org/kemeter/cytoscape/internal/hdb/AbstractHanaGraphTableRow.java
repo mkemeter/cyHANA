@@ -27,8 +27,10 @@ public abstract class AbstractHanaGraphTableRow {
 
         Object value = getFieldValueRaw(fieldName);
 
-        if (targetClassType.isAssignableFrom(String.class)) {
-            return (T)value;
+        if(value == null){
+            return null;
+        }else if (targetClassType.isAssignableFrom(String.class)) {
+            return (T)value.toString();
         } else if (targetClassType.isAssignableFrom(Integer.class)) {
             return (T)Integer.valueOf(value.toString());
         } else if (targetClassType.isAssignableFrom(Long.class)) {
