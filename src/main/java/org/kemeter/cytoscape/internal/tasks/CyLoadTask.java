@@ -81,6 +81,17 @@ public class CyLoadTask extends AbstractTask {
         }
     }
 
+    public static void enhanceCyTableWithAttributes(CyTable cyTable, List<HanaColumnInfo> fieldList){
+        for(HanaColumnInfo hanaCol : fieldList){
+            CyColumn col = cyTable.getColumn(hanaCol.name);
+            if(col == null) {
+                // try to re-use columns, that are already existing. This might cause clashes with the Cytoscape
+                // data model, but makes loading of networks, that have been created with Cytoscape, easier.
+                cyTable.createColumn(hanaCol.name, String.class, false);
+            }
+        }
+    }
+
     /**
      * Loads all edges and nodes from the select graph workspace on SAP HANA
      *
@@ -122,33 +133,27 @@ public class CyLoadTask extends AbstractTask {
         newNetwork.getDefaultNetworkTable().getRow(newNetwork.getSUID()).set("name", selectedWorkspaceKey);
 
         // create node attributes
-        String[] nodeAttributeNames = graphWorkspace.getNodeAttributeNames();
-        for(String attName : nodeAttributeNames){
-            newNetwork.getDefaultNodeTable().createColumn("HANA_" + attName, String.class, false);
-        }
+        enhanceCyTableWithAttributes(newNetwork.getDefaultNodeTable(), graphWorkspace.getNodeFieldList());
 
         // create edge attributes
-        String[] edgeAttributeNames = graphWorkspace.getEdgeAttributeNames();
-        for(String attName : edgeAttributeNames){
-            newNetwork.getDefaultEdgeTable().createColumn("HANA_" + attName, String.class, false);
-        }
+        enhanceCyTableWithAttributes(newNetwork.getDefaultEdgeTable(), graphWorkspace.getEdgeFieldList());
 
         // measure progress based on number of nodes and edges
-        int nGraphObjects = graphWorkspace.edgeTable.size() + graphWorkspace.nodeTable.size();
+        int nGraphObjects = graphWorkspace.getEdgeTable().size() + graphWorkspace.getNodeTable().size();
         int progress = 0;
 
         taskMonitor.setStatusMessage("Creating nodes");
 
         // create nodes
         HashMap<String, CyNode> nodesByHanaKey = new HashMap<>();
-        for(HanaNodeTableRow row : graphWorkspace.nodeTable){
+        for(HanaNodeTableRow row : graphWorkspace.getNodeTable()){
             CyNode newNode = newNetwork.addNode();
             CyRow newRow = newNetwork.getDefaultNodeTable().getRow(newNode.getSUID());
-            newRow.set("name", row.key);
-            for(String attName : nodeAttributeNames){
-                newRow.set("HANA_" + attName, row.getStringAttribute(attName));
+            newRow.set("name", row.getKeyValue());
+            for(HanaColumnInfo field : graphWorkspace.getNodeFieldList()){
+                newRow.set(field.name, row.getFieldValueToString(field.name));
             }
-            nodesByHanaKey.put(row.key, newNode);
+            nodesByHanaKey.put(row.getKeyValue(), newNode);
 
             taskMonitor.setProgress(progress++ / (double)nGraphObjects);
         }
@@ -156,18 +161,18 @@ public class CyLoadTask extends AbstractTask {
         taskMonitor.setStatusMessage("Creating edges");
 
         // create edges
-        for(HanaEdgeTableRow row: graphWorkspace.edgeTable){
-            CyNode sourceNode = nodesByHanaKey.get(row.source);
+        for(HanaEdgeTableRow row: graphWorkspace.getEdgeTable()){
+            CyNode sourceNode = nodesByHanaKey.get(row.getSourceValue());
             String sourceNodeName = newNetwork.getDefaultNodeTable().getRow(sourceNode.getSUID()).get("name", String.class);
-            CyNode targetNode = nodesByHanaKey.get(row.target);
+            CyNode targetNode = nodesByHanaKey.get(row.getTargetValue());
             String targetNodeName = newNetwork.getDefaultNodeTable().getRow(targetNode.getSUID()).get("name", String.class);
 
             CyEdge newEdge = newNetwork.addEdge(sourceNode, targetNode, true);
             CyRow newRow = newNetwork.getDefaultEdgeTable().getRow(newEdge.getSUID());
 
             newRow.set("name", sourceNodeName + " -> " + targetNodeName);
-            for(String attName : edgeAttributeNames){
-                newRow.set("HANA_" + attName, row.getStringAttribute(attName));
+            for(HanaColumnInfo field : graphWorkspace.getEdgeFieldList()){
+                newRow.set(field.name, row.getFieldValueToString(field.name));
             }
 
             taskMonitor.setProgress(progress++ / (double)nGraphObjects);

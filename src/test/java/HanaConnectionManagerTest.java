@@ -1,3 +1,4 @@
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -6,20 +7,14 @@ import org.kemeter.cytoscape.internal.utils.IOUtils;
 
 import java.io.IOException;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 
 public class HanaConnectionManagerTest {
 
     private static HanaConnectionManager connectionManager;
     private static Properties sqlStringsTest;
+    private static String testSchema;
 
-    /**
-     *
-     * @return
-     */
     private static HanaConnectionCredentials getTestCredentials(){
         try{
             Properties connectProps = IOUtils.loadResourceProperties("testcredentials.properties");
@@ -40,10 +35,6 @@ public class HanaConnectionManagerTest {
 
     }
 
-    /**
-     *
-     * @return
-     */
     private static HanaConnectionManager connectToTestInstance() throws SQLException, IOException {
         HanaConnectionManager connectionManager = new HanaConnectionManager();
         connectionManager.connect(getTestCredentials());
@@ -51,15 +42,11 @@ public class HanaConnectionManagerTest {
     }
 
     private static void createSspGraph() throws SQLException {
-        connectionManager.executeNoException(sqlStringsTest.getProperty("DROP_SSP_WORKSPACE"));
-        connectionManager.executeNoException(sqlStringsTest.getProperty("DROP_SSP_TABLES"));
         connectionManager.execute((sqlStringsTest.getProperty("CREATE_SSP_TABLES")));
         connectionManager.execute((sqlStringsTest.getProperty("CREATE_SSP_WORKSPACE")));
     }
 
     private static void createFlightsGraph() throws SQLException {
-        connectionManager.executeNoException(sqlStringsTest.getProperty("DROP_FLIGHTS_WORKSPACE"));
-        connectionManager.executeNoException(sqlStringsTest.getProperty("DROP_FLIGHTS_TABLES"));
         connectionManager.execute((sqlStringsTest.getProperty("CREATE_FLIGHTS_TABLES")));
         connectionManager.execute((sqlStringsTest.getProperty("INSERT_FLIGHTS_TABLES_VALUES")));
         connectionManager.execute((sqlStringsTest.getProperty("CREATE_FLIGHTS_WORKSPACE")));
@@ -67,17 +54,34 @@ public class HanaConnectionManagerTest {
 
     @BeforeClass
     public static void setUp() throws IOException, SQLException {
-        connectionManager = connectToTestInstance();
         sqlStringsTest = IOUtils.loadResourceProperties("SqlStringsTest.sql");
+        testSchema = "CYHANA_TEST_" + UUID.randomUUID().toString();
+
+        connectionManager = connectToTestInstance();
+
+        // create a test schema with random name
+        connectionManager.createSchema(testSchema);
+        connectionManager.execute(String.format(sqlStringsTest.getProperty("SET_SCHEMA"), testSchema));
 
         createSspGraph();
         createFlightsGraph();
+    }
+
+    @AfterClass
+    public static void cleanUp() throws SQLException {
+        connectionManager.execute(String.format(sqlStringsTest.getProperty("DROP_SCHEMA_CASCADE"), testSchema));
     }
 
     @Test
     public void testInitialSetup(){
         Assert.assertNotNull(connectionManager);
         Assert.assertTrue(connectionManager.isConnected());
+        try {
+            Assert.assertTrue(connectionManager.schemaExists(testSchema));
+            Assert.assertEquals(testSchema, connectionManager.getCurrentSchema());
+        } catch (SQLException e){
+            Assert.fail(e.toString());
+        }
     }
 
     @Test
@@ -87,7 +91,7 @@ public class HanaConnectionManagerTest {
         try{
             currentSchema = connectionManager.getCurrentSchema();
         } catch (SQLException e){
-            Assert.fail();
+            Assert.fail(e.toString());
         }
 
         Assert.assertNotNull(currentSchema);
@@ -95,7 +99,7 @@ public class HanaConnectionManagerTest {
     }
 
     @Test
-    public void someQuery(){
+    public void testSomeQuery(){
 
         List<Object[]> resultList = null;
         try {
@@ -104,7 +108,7 @@ public class HanaConnectionManagerTest {
                     null
             );
         } catch (SQLException e){
-            Assert.fail();
+            Assert.fail(e.toString());
         }
 
         if(resultList == null || resultList.size() != 2) Assert.fail();
@@ -119,35 +123,37 @@ public class HanaConnectionManagerTest {
     }
 
     @Test
-    public void loadGraphWorkspace(){
+    public void testLoadGraphWorkspace(){
         HanaGraphWorkspace sspWorkspace = null;
         try {
             sspWorkspace = connectionManager.loadGraphWorkspace(connectionManager.getCurrentSchema(), "SSP");
-        } catch (SQLException e){
-            Assert.fail();
+        } catch (Exception e){
+            Assert.fail(e.toString());
         }
 
         Assert.assertNotNull(sspWorkspace);
-        Assert.assertEquals(6, sspWorkspace.edgeTable.size());
-        Assert.assertEquals(4, sspWorkspace.nodeTable.size());
+        Assert.assertTrue(sspWorkspace.isMetadataComplete());
+        Assert.assertEquals(6, sspWorkspace.getEdgeTable().size());
+        Assert.assertEquals(4, sspWorkspace.getNodeTable().size());
     }
 
     @Test
-    public void loadGraphWorkspaceWithGeometries(){
+    public void testLoadGraphWorkspaceWithGeometries(){
         HanaGraphWorkspace flightsWorkspace = null;
         try {
             flightsWorkspace = connectionManager.loadGraphWorkspace(this.connectionManager.getCurrentSchema(), "FLIGHTS");
-        } catch (SQLException e){
-            Assert.fail();
+        } catch (Exception e){
+            Assert.fail(e.toString());
         }
 
         Assert.assertNotNull(flightsWorkspace);
-        Assert.assertEquals(31, flightsWorkspace.edgeTable.size());
-        Assert.assertEquals(8, flightsWorkspace.nodeTable.size());
+        Assert.assertTrue(flightsWorkspace.isMetadataComplete());
+        Assert.assertEquals(31, flightsWorkspace.getEdgeTable().size());
+        Assert.assertEquals(8, flightsWorkspace.getNodeTable().size());
     }
 
     @Test
-    public void listGraphWorkspace(){
+    public void testListGraphWorkspace(){
         List<HanaDbObject> workspaceList = null;
         String currentSchema = null;
 
@@ -155,17 +161,23 @@ public class HanaConnectionManagerTest {
             workspaceList = connectionManager.listGraphWorkspaces();
             currentSchema = connectionManager.getCurrentSchema();
         } catch (SQLException e){
-            Assert.fail();
+            Assert.fail(e.toString());
         }
 
-        boolean foundTestWorkspace = false;
+        boolean foundSSPWorkspace = false;
+        boolean foundFlightsWorkspace = false;
         for(HanaDbObject ws : workspaceList){
             if(ws.schema.equals(currentSchema) && ws.name.equals("SSP")){
-                foundTestWorkspace = true;
+                foundSSPWorkspace = true;
+            }else if(ws.schema.equals(currentSchema) && ws.name.equals("FLIGHTS")){
+                foundFlightsWorkspace = true;
+            } else if(ws.schema.equals(currentSchema)){
+                Assert.fail("Unknown workspace retrieved");
             }
         }
 
-        if(!foundTestWorkspace) Assert.fail();
+        Assert.assertTrue(foundSSPWorkspace);
+        Assert.assertTrue(foundFlightsWorkspace);
     }
 
     @Test
@@ -174,14 +186,14 @@ public class HanaConnectionManagerTest {
             Assert.assertTrue(connectionManager.schemaExists("SYS"));
             Assert.assertFalse(connectionManager.schemaExists("THIS_SCHEMA_DOES_NOT_EXIST"));
         } catch (SQLException e){
-            Assert.fail();
+            Assert.fail(e.toString());
         }
     }
 
     @Test
     public void testCreateTable(){
         try {
-            String newTableName = "TEST_DELETEME";
+            String newTableName = "TEST_TABLE";
             HanaDbObject newTable = new HanaDbObject(connectionManager.getCurrentSchema(), newTableName);
             List<HanaColumnInfo> newCols = Arrays.asList(
                     new HanaColumnInfo(newTable.schema, newTable.name, "COL1"),
@@ -191,15 +203,41 @@ public class HanaConnectionManagerTest {
 
             connectionManager.createTable(newTable, newCols);
 
-            connectionManager.execute(String.format(
-                    sqlStringsTest.getProperty("DROP_TABLE"),
-                    newTable.schema,
-                    newTable.name
-            ));
-
         } catch (SQLException e){
-            Assert.fail();
+            Assert.fail(e.toString());
+        }
+    }
+
+    @Test
+    public void testBulkInsert(){
+        HanaDbObject targetTable = new HanaDbObject(testSchema, "TEST_BULK_INSERT_TABLE");
+        List<HanaColumnInfo> columnInfoList = Arrays.asList(
+                new HanaColumnInfo(targetTable.schema, targetTable.name, "COL1"),
+                new HanaColumnInfo(targetTable.schema, targetTable.name, "COL2"),
+                new HanaColumnInfo(targetTable.schema, targetTable.name, "COL3")
+        );
+
+        int nRecords = 10;
+        List<Map<String, Object>> data = new ArrayList<>();
+        for(int i = 0; i < nRecords; i++){
+            Map<String, Object> record = new HashMap<>();
+            record.put("COL1", UUID.randomUUID().toString());
+            record.put("COL2", UUID.randomUUID().toString());
+            record.put("COL3", UUID.randomUUID().toString());
+            data.add(record);
         }
 
+        try {
+            connectionManager.createTable(targetTable, columnInfoList);
+            connectionManager.bulkInsertData(targetTable, columnInfoList, data);
+            int actualRecords = connectionManager.executeQuerySingleValue(String.format(
+                    sqlStringsTest.getProperty("COUNT_RECORDS"),
+                    targetTable.schema,
+                    targetTable.name
+            ), null, Integer.class);
+            Assert.assertEquals(nRecords, actualRecords);
+        } catch (SQLException e){
+            Assert.fail(e.toString());
+        }
     }
 }

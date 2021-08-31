@@ -5,59 +5,39 @@ import java.util.HashMap;
 /**
  * Represents a record in an edge table on SAP HANA
  */
-public class HanaEdgeTableRow{
+public class HanaEdgeTableRow extends AbstractHanaGraphTableRow{
 
-    /**
-     * Key value
-     */
-    public String key;
+    private String keyFieldName;
 
-    /**
-     * Source value
-     */
-    public String source;
+    private String sourceFieldName;
 
-    /**
-     * Target value
-     */
-    public String target;
+    private String targetFieldName;
 
-    /**
-     * Attribute values mapped by column name
-     */
-    public HashMap<String, Object> attributeValues;
-
-    /**
-     * Default Constructor
-     *
-     * @param key       Initial key
-     * @param source    Initial source
-     * @param target    Initial target
-     */
-    public HanaEdgeTableRow(String key, String source, String target){
-        this.key = key;
-        this.source = source;
-        this.target = target;
-        this.attributeValues = new HashMap<>();
+    public HanaEdgeTableRow(){
+        super();
     }
 
-    /**
-     * Retrieves the attribute value as a String
-     *
-     * @param attributeName Name of the attribute
-     * @return Attribute value as a String; Null if conversion to String is not possible
-     */
-    public String getStringAttribute(String attributeName){
-        if(!this.attributeValues.containsKey(attributeName)){
-            return null;
-        }
+    public void setKeyFieldName(String keyFieldName) {
+        this.keyFieldName = keyFieldName;
+    }
 
-        Object value = this.attributeValues.get(attributeName);
+    public void setSourceFieldName(String sourceFieldName) {
+        this.sourceFieldName = sourceFieldName;
+    }
 
-        try{
-            return value.toString();
-        }catch (Exception e){
-            return null;
-        }
+    public void setTargetFieldName(String targetFieldName) {
+        this.targetFieldName = targetFieldName;
+    }
+
+    public String getKeyValue(){
+        return this.getFieldValueToString(this.keyFieldName);
+    }
+
+    public String getSourceValue(){
+        return this.getFieldValueToString(this.sourceFieldName);
+    }
+
+    public String getTargetValue(){
+        return this.getFieldValueToString(this.targetFieldName);
     }
 }

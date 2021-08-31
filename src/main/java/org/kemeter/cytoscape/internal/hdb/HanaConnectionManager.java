@@ -1,5 +1,6 @@
 package org.kemeter.cytoscape.internal.hdb;
 
+import org.kemeter.cytoscape.internal.exceptions.HanaConnectionManagerException;
 import org.kemeter.cytoscape.internal.utils.IOUtils;
 
 import java.io.IOException;
@@ -9,44 +10,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-import org.slf4j.LoggerFactory;
-import org.slf4j.Logger;
+import static org.kemeter.cytoscape.internal.utils.CyHanaLogging.*;
+import static org.kemeter.cytoscape.internal.utils.HanaUtils.*;
 
 /**
  * Handles communication with the database and SAP HANA specific stuff
  */
 public class HanaConnectionManager {
-
-    private static Logger logger = LoggerFactory.getLogger("org.cytoscape.application.userlog");
-    public static void debug(String msg){ logger.debug(" HANA "+msg); }
-    public static void info(String msg){  logger.info( " HANA "+msg); }
-    public static void warn(String msg){  logger.warn( " HANA "+msg); }
-    public static void err(String msg){   logger.error(" HANA "+msg); }
-
-    /**
-     *  Helper function to handle the String representation of DB null values
-     *
-     * @param obj   Value of a database record
-     * @return      String representation of the value; "DB_NULL" if value has been null
-     */
-    private static String toStrNull(Object obj){
-        return obj == null ? "DB_NULL" : obj.toString();
-    }
-
-
-    private static String quoteIdentifier(String id){
-        return '"'+id+'"';
-    }
-
-    /**
-     * Method to parse a build string
-     */
-    public static boolean isCloudEdition(String buildStr){
-        if (buildStr==null){
-            return false;
-        }
-        return buildStr.contains("/CE");
-    }
 
     /**
      * Internal connection object
@@ -56,14 +26,14 @@ public class HanaConnectionManager {
     /**
      * Holding all SQL statement that are required
      */
-    private Properties sqlStrings;
+    private final Properties sqlStrings;
 
     /**
      * HANA version and edition (Cloud, On prem)
      * For instance HANA Cloud: fa/CE2021.18
      * HANA on prem: fa/hana2sp05
      */
-    protected String buildVersion;
+    private String buildVersion;
 
     /**
      * Default constructor
@@ -131,30 +101,17 @@ public class HanaConnectionManager {
      * Executes a statement on the database
      *
      * @param statement The statement to execute
-     * @return          True, if statement has been executed successfully
      */
-    public boolean execute(String statement) throws SQLException {
+    public void execute(String statement) throws SQLException {
         try{
             Statement stmt = this.connection.createStatement();
             stmt.execute(statement);
-            return true;
         } catch (SQLException e){
             err("Could not execute statement: " + statement);
             err(e.toString());
             throw e;
         }
     }
-    /**
-     * Executes a statement on the database and doesn't return any error nor throw exception
-     *
-     * @param statement The statement to execute
-     */
-    public void executeNoException(String statement) {
-        try{
-            Statement stmt = this.connection.createStatement();
-            stmt.execute(statement);
-        } catch (SQLException e){}
-    }    
 
     /**
      * Executes a query statement on the database
@@ -244,21 +201,36 @@ public class HanaConnectionManager {
     }
 
     /**
+     * Executes the same statement multiple times with different parameters as batch
+     *
+     * @param statement         Statement to execute
+     * @param batchParameter    List of parameter configurations
+     * @throws SQLException     sql error
+     */
+    private void executeBatch(String statement, List<HanaSqlParameter[]> batchParameter) throws SQLException {
+        PreparedStatement batchStmt = this.connection.prepareStatement(statement);
+
+        for(HanaSqlParameter[] recordParameter : batchParameter){
+            for(int i=0; i<recordParameter.length; i++){
+                Object value = recordParameter[i].parameterValue;
+                if(value == null){
+                    batchStmt.setNull(i+1, Types.VARCHAR);
+                }else{
+                    batchStmt.setString(i+1, value.toString());
+                }
+            }
+            batchStmt.addBatch();
+        }
+        batchStmt.executeBatch();
+    }
+
+    /**
      * Retrieves the current schema from the database
      *
      * @return  Name of the currently active schema
      */
     public String getCurrentSchema() throws SQLException {
         return this.executeQuerySingleValue(this.sqlStrings.getProperty("SELECT_CURRENT_SCHEMA"), null, String.class);
-    }
-
-    /**
-     * Retrieves the current version of the database
-     *
-     * @return  Name of the currently active schema
-     */
-    public String getHANABuild(){
-        return this.buildVersion;
     }
 
     /**
@@ -282,46 +254,48 @@ public class HanaConnectionManager {
      * workspaceDbObject (i.e. schema and name are already given)
      *
      * @param graphWorkspace    HanaGraphWorkspace with pre-populated workspaceDbObject
-     * @return                  True, if metadata has been completely loaded
      */
-    private boolean loadWorkspaceMetadata(HanaGraphWorkspace graphWorkspace) throws SQLException {
-        List<Object[]> metadata = null;
-        String propName="LOAD_WORKSPACE_METADATA_HANA_";
-        propName+=(HanaConnectionManager.isCloudEdition(this.buildVersion))? "CLOUD":"ONPREM";
+    private void loadWorkspaceMetadata(HanaGraphWorkspace graphWorkspace) throws SQLException, HanaConnectionManagerException {
+        List<Object[]> metadata;
+
+        String propName="LOAD_WORKSPACE_METADATA_HANA_" +
+                (isCloudEdition(this.buildVersion)? "CLOUD":"ONPREM");
+
         debug("Reading graph metadata with "+propName);
         metadata = this.executeQueryList(
                     this.sqlStrings.getProperty(propName),
                     new HanaSqlParameter[]{
-                            new HanaSqlParameter(graphWorkspace.workspaceDbObject.schema, Types.VARCHAR),
-                            new HanaSqlParameter(graphWorkspace.workspaceDbObject.name, Types.VARCHAR)
+                            new HanaSqlParameter(graphWorkspace.getWorkspaceDbObject().schema, Types.VARCHAR),
+                            new HanaSqlParameter(graphWorkspace.getWorkspaceDbObject().name, Types.VARCHAR)
                     }
             );
         
         for(Object[] row : metadata){
             HanaColumnInfo newColInfo = new HanaColumnInfo(toStrNull(row[2]), toStrNull(row[3]), toStrNull(row[4]));
+
             switch(toStrNull(row[0])){
                 case "EDGE":
                     switch(toStrNull(row[1])){
                         case "KEY":
-                            graphWorkspace.edgeKeyCol = newColInfo;
+                            graphWorkspace.addEdgeKeyCol(newColInfo);
                             break;
                         case "SOURCE":
-                            graphWorkspace.edgeSourceCol = newColInfo;
+                            graphWorkspace.addEdgeSourceCol(newColInfo);
                             break;
                         case "TARGET":
-                            graphWorkspace.edgeTargetCol = newColInfo;
+                            graphWorkspace.addEdgeTargetCol(newColInfo);
                             break;
                         default:
-                            graphWorkspace.edgeAttributeCols.add(newColInfo);
+                            graphWorkspace.addEdgeAttributeCol(newColInfo);
                     }
                     break;
                 case "VERTEX":
                     switch (toStrNull(row[1])){
                         case "KEY":
-                            graphWorkspace.nodeKeyCol = newColInfo;
+                            graphWorkspace.addNodeKeyCol(newColInfo);
                             break;
                         default:
-                            graphWorkspace.nodeAttributeCols.add(newColInfo);
+                            graphWorkspace.addNodeAttributeCol(newColInfo);
                     }
                     break;
             }
@@ -329,39 +303,41 @@ public class HanaConnectionManager {
 
         if(!graphWorkspace.isMetadataComplete()){
             err("Incomplete graph workspace definition in GRAPH_WORKSPACE_COLUMNS");
-            return false;
+            throw new HanaConnectionManagerException("Incomplete graph workspace definition in GRAPH_WORKSPACE_COLUMNS");
         }
-        return true;
     }
 
     /**
      * Loads the content of the node table for a HanaGraphWorkspace object with complete metadata
      *
      * @param graphWorkspace    HANA Graph Workspace with complete metadata
-     * @return                  True, if node table content has been loaded
      */
     private void loadNetworkNodes(HanaGraphWorkspace graphWorkspace) throws SQLException {
-        info("Loading network nodes of "+graphWorkspace.workspaceDbObject.toString());
-        String attCols = "";
-        for(HanaColumnInfo col : graphWorkspace.nodeAttributeCols){
-            attCols += ", " + quoteIdentifier(col.name);
+        info("Loading network nodes of "+ graphWorkspace.getWorkspaceDbObject().toString());
+
+        String fields = "";
+        ArrayList<HanaColumnInfo> fieldList = graphWorkspace.getNodeFieldList();
+
+        for(HanaColumnInfo col : fieldList){
+            fields += quoteIdentifier(col.name) + ",";
         }
+        fields = fields.substring(0, fields.length()-1);
 
         List<Object[]> nodeTable = this.executeQueryList(String.format(
-                this.sqlStrings.getProperty("LOAD_NETWORK_NODES"),
-                graphWorkspace.nodeKeyCol.name,
-                attCols,
-                graphWorkspace.nodeKeyCol.schema,
-                graphWorkspace.nodeKeyCol.table
+                this.sqlStrings.getProperty("GENERIC_SELECT_PROJECTION"),
+                fields,
+                graphWorkspace.getNodeKeyColInfo().schema,
+                graphWorkspace.getNodeKeyColInfo().table
         ), null);
 
-        graphWorkspace.nodeTable = new ArrayList<>();
+        graphWorkspace.clearNodeTable();
         for(Object[] row : nodeTable){
-            HanaNodeTableRow newRow = new HanaNodeTableRow(toStrNull(row[0]));
-            for(int i=1; i<row.length; i++){
-                newRow.attributeValues.put(graphWorkspace.nodeAttributeCols.get(i-1).name, row[i]);
+            HanaNodeTableRow newRow = new HanaNodeTableRow();
+            newRow.setKeyFieldName(graphWorkspace.getNodeKeyColInfo().name);
+            for(int i=0; i<row.length; i++){
+                newRow.addFieldValue(fieldList.get(i).name, row[i]);
             }
-            graphWorkspace.nodeTable.add(newRow);
+            graphWorkspace.getNodeTable().add(newRow);
         }
     }
 
@@ -369,32 +345,34 @@ public class HanaConnectionManager {
      * Loads the content of the edge table for a HanaGraphWorkspace object with complete metadata
      *
      * @param graphWorkspace    HANA Graph Workspace with complete metadata
-     * @return                  True, if edge table content has been loaded
      */
     private void loadNetworkEdges(HanaGraphWorkspace graphWorkspace) throws SQLException {
-        info("Loading network edges of "+graphWorkspace.workspaceDbObject.toString());
-        String attCols = "";
-        for(HanaColumnInfo col : graphWorkspace.edgeAttributeCols){
-            attCols += ", " + quoteIdentifier(col.name) ;
+        info("Loading network edges of "+ graphWorkspace.getWorkspaceDbObject().toString());
+        String fields = "";
+        ArrayList<HanaColumnInfo> fieldList = graphWorkspace.getEdgeFieldList();
+
+        for(HanaColumnInfo col : fieldList){
+            fields += quoteIdentifier(col.name) + ",";
         }
+        fields = fields.substring(0, fields.length()-1);
 
         List<Object[]> edgeTable = this.executeQueryList(String.format(
-                this.sqlStrings.getProperty("LOAD_NETWORK_EDGES"),
-                graphWorkspace.edgeKeyCol.name,
-                graphWorkspace.edgeSourceCol.name,
-                graphWorkspace.edgeTargetCol.name,
-                attCols,
-                graphWorkspace.edgeKeyCol.schema,
-                graphWorkspace.edgeKeyCol.table
+                this.sqlStrings.getProperty("GENERIC_SELECT_PROJECTION"),
+                fields,
+                graphWorkspace.getEdgeKeyColInfo().schema,
+                graphWorkspace.getEdgeKeyColInfo().table
         ), null);
 
-        graphWorkspace.edgeTable = new ArrayList<>();
+        graphWorkspace.clearEdgeTable();
         for(Object[] row : edgeTable){
-            HanaEdgeTableRow newRow = new HanaEdgeTableRow(toStrNull(row[0]), toStrNull(row[1]), toStrNull(row[2]));
-            for(int i=3; i<row.length; i++){
-                newRow.attributeValues.put(graphWorkspace.edgeAttributeCols.get(i-3).name, row[i]);
+            HanaEdgeTableRow newRow = new HanaEdgeTableRow();
+            newRow.setKeyFieldName(graphWorkspace.getEdgeKeyColInfo().name);
+            newRow.setSourceFieldName(graphWorkspace.getEdgeSourceColInfo().name);
+            newRow.setTargetFieldName(graphWorkspace.getEdgeTargetColInfo().name);
+            for(int i=0; i<row.length; i++){
+                newRow.addFieldValue(fieldList.get(i).name, row[i]);
             }
-            graphWorkspace.edgeTable.add(newRow);
+            graphWorkspace.getEdgeTable().add(newRow);
         }
     }
 
@@ -406,9 +384,10 @@ public class HanaConnectionManager {
      * @param graphWorkspaceName    Name of the workspace to be loaded
      * @return                      HanaGraphWorkspace Object
      */
-    public HanaGraphWorkspace loadGraphWorkspace(String schema, String graphWorkspaceName) throws SQLException {
-        HanaGraphWorkspace graphWorkspace = new HanaGraphWorkspace();
-        graphWorkspace.workspaceDbObject = new HanaDbObject(schema, graphWorkspaceName);
+    public HanaGraphWorkspace loadGraphWorkspace(String schema, String graphWorkspaceName) throws SQLException, HanaConnectionManagerException {
+
+        HanaGraphWorkspace graphWorkspace =
+                new HanaGraphWorkspace(new HanaDbObject(schema, graphWorkspaceName));
 
         loadWorkspaceMetadata(graphWorkspace);
         loadNetworkNodes(graphWorkspace);
@@ -424,15 +403,16 @@ public class HanaConnectionManager {
      * @param graphWorkspace    Schema and Name of the workspace to be loaded
      * @return                  HanaGraphWorkspace Object
      */
-    public HanaGraphWorkspace loadGraphWorkspace(HanaDbObject graphWorkspace) throws SQLException {
+    public HanaGraphWorkspace loadGraphWorkspace(HanaDbObject graphWorkspace) throws SQLException, HanaConnectionManagerException {
         return loadGraphWorkspace(graphWorkspace.schema, graphWorkspace.name);
     }
 
     /**
+     *  Determines if a schema is existing on the instance
      *
-     * @param schema
-     * @return
-     * @throws SQLException
+     * @param schema    The schema name to check
+     * @return          True, if schema is existing. False, if not.
+     * @throws SQLException sql error
      */
     public boolean schemaExists(String schema) throws SQLException {
         int schemaExists = executeQuerySingleValue(
@@ -447,25 +427,33 @@ public class HanaConnectionManager {
     }
 
     /**
+     * Creates a schema with the given name on the instance. Will throw
+     * Exception if schema already exists.
      *
-     * @param schema
-     * @throws SQLException
+     * @param schema    Name of the schema to create
+     * @throws SQLException sql error
      */
     public void createSchema(String schema) throws SQLException {
         execute(String.format(sqlStrings.getProperty("CREATE_SCHEMA"), schema));
     }
 
     /**
+     * Creates a new table on the database instance
      *
-     * @param newTableLocation
-     * @param newCols
-     * @throws SQLException
+     * @param newTableLocation  Schema and name of the table to create
+     * @param newCols           Column definition of the table to create
+     * @throws SQLException     sql error
      */
     public void createTable(HanaDbObject newTableLocation, List<HanaColumnInfo> newCols) throws SQLException {
         String fieldList = "";
         for(HanaColumnInfo col : newCols){
-            fieldList +=
-                    quoteIdentifier(col.name) + " NVARCHAR(5000)" + (col.primaryKey?" PRIMARY KEY":"") + ",";
+            fieldList += quoteIdentifier(col.name) + " NVARCHAR(5000)";
+            if(col.primaryKey){
+                fieldList += " PRIMARY KEY";
+            }else if (col.notNull){
+                fieldList += " NOT NULL";
+            }
+            fieldList+=",";
         }
         fieldList = fieldList.substring(0, fieldList.length() - 1);
 
@@ -479,12 +467,19 @@ public class HanaConnectionManager {
         this.execute(createStmt);
     }
 
-
-    public void bulkInsertData(HanaDbObject targetTable, List<HanaColumnInfo> columnInfos, List<Map<String, Object>> data) throws SQLException {
+    /**
+     * Bulk inserts data into a HANA table
+     *
+     * @param targetTable       Schema and name of the target table
+     * @param columnInfoList    List of relevant columns
+     * @param data              Data for the relevant columns
+     * @throws SQLException     sql error
+     */
+    public void bulkInsertData(HanaDbObject targetTable, List<HanaColumnInfo> columnInfoList, List<Map<String, Object>> data) throws SQLException {
 
         String fields = "";
         String values = "";
-        for(HanaColumnInfo colInfo : columnInfos){
+        for(HanaColumnInfo colInfo : columnInfoList){
             fields += quoteIdentifier(colInfo.name) + ",";
             values += "?,";
         }
@@ -502,9 +497,9 @@ public class HanaConnectionManager {
         ArrayList<HanaSqlParameter[]> batchParams = new ArrayList<>();
 
         for(Map<String, Object> record : data){
-            HanaSqlParameter[] recordParams = new HanaSqlParameter[columnInfos.size()];
+            HanaSqlParameter[] recordParams = new HanaSqlParameter[columnInfoList.size()];
             int i=0;
-            for(HanaColumnInfo colInfo : columnInfos){
+            for(HanaColumnInfo colInfo : columnInfoList){
                 Object objValue = record.get(colInfo.name);
                 recordParams[i++] = new HanaSqlParameter(objValue == null ? null : objValue.toString(), Types.VARCHAR);
             }
@@ -514,21 +509,41 @@ public class HanaConnectionManager {
         executeBatch(insertStatement, batchParams);
     }
 
-    private void executeBatch(String statement, List<HanaSqlParameter[]> batchParameter) throws SQLException {
-        PreparedStatement batchStmt = this.connection.prepareStatement(statement);
+    /**
+     * Creates a new graph workspace on the instance. Will throw an exception
+     * if the workspace already exists. Not that only the workspace objects will
+     * be created. It is assumed that linked tables and its contents are already
+     * existing.
+     *
+     * @param graphWorkspace    The graph workspace to create
+     * @throws SQLException     sql error
+     */
+    public void createGraphWorkspace(HanaGraphWorkspace graphWorkspace) throws SQLException {
 
-        for(HanaSqlParameter[] recordParameter : batchParameter){
-            for(int i=0; i<recordParameter.length; i++){
-                Object value = recordParameter[i].parameterValue;
-                if(value == null){
-                    batchStmt.setNull(i+1, Types.VARCHAR);
-                }else{
-                    batchStmt.setString(i+1, value.toString());
-                }
-            }
-            batchStmt.addBatch();
-        }
-        batchStmt.executeBatch();
+        this.execute(String.format(
+                // basic statement
+                this.sqlStrings.getProperty("CREATE_GRAPH_WORKSPACE"),
+                // workspace schema
+                graphWorkspace.getWorkspaceDbObject().schema,
+                // workspace name
+                graphWorkspace.getWorkspaceDbObject().name,
+                // edge table schema
+                graphWorkspace.getEdgeTableDbObject().schema,
+                // edge table name
+                graphWorkspace.getEdgeTableDbObject().name,
+                // edge source col
+                graphWorkspace.getEdgeSourceColInfo().name,
+                // edge target col
+                graphWorkspace.getEdgeTargetColInfo().name,
+                // edge key col
+                graphWorkspace.getEdgeKeyColInfo().name,
+                // node table schema
+                graphWorkspace.getNodeTableDbObject().schema,
+                // node table name
+                graphWorkspace.getNodeTableDbObject().name,
+                // node table key col
+                graphWorkspace.getNodeKeyColInfo().name
+                ));
     }
 
 }

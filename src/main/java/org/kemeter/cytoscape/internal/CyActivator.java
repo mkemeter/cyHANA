@@ -45,14 +45,12 @@ public class CyActivator extends AbstractCyActivator {
             registerService(bc, connectFactory, TaskFactory.class, connectProps);
 
             // create graph workspace from network
-            /*
             CyCreateWorkspaceTaskFactory createFactory = new CyCreateWorkspaceTaskFactory(networkManager, connectionManager);
             Properties createProps = new Properties();
             createProps.setProperty(ServiceProperties.PREFERRED_MENU, "Apps.SAP HANA");
             createProps.setProperty(ServiceProperties.TITLE, "Create Graph Workspace from Current Network");
             createProps.setProperty(ServiceProperties.MENU_GRAVITY, "2.0");
             registerService(bc, createFactory, TaskFactory.class, createProps);
-            */
 
             // load graph workspace
             CyLoadTaskFactory loadFactory = new CyLoadTaskFactory(networkFactory, networkManager, connectionManager);

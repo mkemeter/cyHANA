@@ -1,4 +1,4 @@
-package org.kemeter.cytoscape.internal.cyhelper;
+package org.kemeter.cytoscape.internal.utils;
 
 public class CyNetworkKey {
     Long suid;

@@ -8,16 +8,11 @@ import org.cytoscape.work.Tunable;
 import org.cytoscape.work.util.ListChangeListener;
 import org.cytoscape.work.util.ListSelection;
 import org.cytoscape.work.util.ListSingleSelection;
-import org.kemeter.cytoscape.internal.hdb.HanaColumnInfo;
 import org.kemeter.cytoscape.internal.hdb.HanaConnectionManager;
-import org.kemeter.cytoscape.internal.hdb.HanaDbObject;
-import org.kemeter.cytoscape.internal.cyhelper.CyNetworkKey;
-import org.kemeter.cytoscape.internal.cyhelper.CyNetworkUtils;
+import org.kemeter.cytoscape.internal.utils.CyNetworkKey;
+import org.kemeter.cytoscape.internal.hdb.HanaGraphWorkspace;
 
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 
 public class CyCreateWorkspaceTask extends AbstractTask {
 
@@ -125,37 +120,49 @@ public class CyCreateWorkspaceTask extends AbstractTask {
         CyNetworkKey selectedNetworkKey = this.networkSelection.getSelectedValue();
         CyNetwork selectedNetwork = this.networkManager.getNetwork(selectedNetworkKey.getSUID());
 
+
+        taskMonitor.setStatusMessage("Assembling Graph Workspace");
+        HanaGraphWorkspace newWorkspace =
+                new HanaGraphWorkspace(this.schema, this.workspaceName, this.nodeTableName, this.edgeTableName, selectedNetwork);
+
+        if(!newWorkspace.isMetadataComplete()){
+            taskMonitor.showMessage(TaskMonitor.Level.ERROR, "Error assembling workspace. Metadata is not complete.");
+            taskMonitor.setProgress(1d);
+            return;
+        }
+
         taskMonitor.setStatusMessage("Creating node table");
         // create nodes table
-        CyTable nodeTable = selectedNetwork.getDefaultNodeTable();
-        HanaDbObject newHanaNodeTable = new HanaDbObject(this.schema, this.nodeTableName);
-        List<HanaColumnInfo> hanaNodeCols = CyNetworkUtils.getHanaColumnInfo(newHanaNodeTable, nodeTable);
-        this.connectionManager.createTable(newHanaNodeTable, hanaNodeCols);
+        this.connectionManager.createTable(
+                newWorkspace.getNodeTableDbObject(),
+                newWorkspace.getNodeFieldList()
+        );
 
         taskMonitor.setStatusMessage("Uploading node records");
         //insert values
-        List<Map<String, Object>> nodeData = new ArrayList<>();
-        for(CyRow row : nodeTable.getAllRows()){
-            nodeData.add(row.getAllValues());
-        }
-        this.connectionManager.bulkInsertData(newHanaNodeTable, hanaNodeCols, nodeData);
+        this.connectionManager.bulkInsertData(
+                newWorkspace.getNodeTableDbObject(),
+                newWorkspace.getNodeFieldList(),
+                newWorkspace.getNodeTableData()
+        );
 
         taskMonitor.setStatusMessage("Creating edge table");
         // create edges table
-        CyTable edgeTable = selectedNetwork.getDefaultEdgeTable();
-        HanaDbObject newHanaEdgeTable = new HanaDbObject(this.schema, this.edgeTableName);
-        List<HanaColumnInfo> hanaEdgeCols = CyNetworkUtils.getHanaColumnInfo(newHanaEdgeTable, edgeTable);
-        this.connectionManager.createTable(newHanaEdgeTable, hanaEdgeCols);
+        this.connectionManager.createTable(
+                newWorkspace.getEdgeTableDbObject(),
+                newWorkspace.getEdgeFieldList()
+        );
 
         taskMonitor.setStatusMessage("Uploading edge records");
-        // insert values
-        List<Map<String, Object>> edgeData = new ArrayList<>();
-        for(CyRow row : edgeTable.getAllRows()){
-            edgeData.add(row.getAllValues());
-        }
-        this.connectionManager.bulkInsertData(newHanaEdgeTable, hanaEdgeCols, edgeData);
+        //insert values
+        this.connectionManager.bulkInsertData(
+                newWorkspace.getEdgeTableDbObject(),
+                newWorkspace.getEdgeFieldList(),
+                newWorkspace.getEdgeTableData()
+        );
 
+        taskMonitor.setStatusMessage("Creating Graph Workspace");
         // create graph workspace
-
+        this.connectionManager.createGraphWorkspace(newWorkspace);
     }
 }
