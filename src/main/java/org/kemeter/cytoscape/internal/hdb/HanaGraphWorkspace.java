@@ -48,7 +48,7 @@ public class HanaGraphWorkspace{
                     targetTable.schema,
                     targetTable.name,
                     col.getName(),
-                    HanaDataType.convertJavaToSqlType(col.getType()),
+                    col.getType(),
                     col.isPrimaryKey()
             ));
         }

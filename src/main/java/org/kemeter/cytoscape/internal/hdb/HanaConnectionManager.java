@@ -468,7 +468,8 @@ public class HanaConnectionManager {
     public void createTable(HanaDbObject newTableLocation, List<HanaColumnInfo> newCols) throws SQLException {
         String fieldList = "";
         for(HanaColumnInfo col : newCols){
-            fieldList += quoteIdentifier(col.name) + " NVARCHAR(5000)";
+            fieldList += quoteIdentifier(col.name) + " " + col.dataType.getHanaDdl();
+
             if(col.primaryKey){
                 fieldList += " PRIMARY KEY";
             }else if (col.notNull){

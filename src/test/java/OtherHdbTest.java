@@ -21,10 +21,10 @@ public class OtherHdbTest {
 
     @Test
     public void testHanaTypeConversion(){
-        Assert.assertEquals(Types.NVARCHAR, HanaDataType.convertJavaToSqlType(String.class));
-        Assert.assertEquals(Types.INTEGER, HanaDataType.convertJavaToSqlType(Integer.class));
-        Assert.assertEquals(Types.DOUBLE, HanaDataType.convertJavaToSqlType(Double.class));
-        Assert.assertEquals(Types.BIGINT, HanaDataType.convertJavaToSqlType(Long.class));
-        Assert.assertEquals(Types.OTHER, HanaDataType.convertJavaToSqlType(new ArrayList()));
+        Assert.assertEquals(Types.NVARCHAR, new HanaDataType(String.class).getSqlDataType());
+        Assert.assertEquals(Types.INTEGER, new HanaDataType(Integer.class).getSqlDataType());
+        Assert.assertEquals(Types.DOUBLE, new HanaDataType(Double.class).getSqlDataType());
+        Assert.assertEquals(Types.BIGINT, new HanaDataType(Long.class).getSqlDataType());
+        Assert.assertEquals(Types.OTHER, new HanaDataType(new ArrayList()).getSqlDataType());
     }
 }

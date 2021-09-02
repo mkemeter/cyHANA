@@ -27,7 +27,28 @@ public class HanaDataType {
         return convertSqlToJavaCytoType(this.sqlDataType);
     }
 
-    public Class convertSqlToJavaCytoType(int sqlType){
+    public String getHanaDdl(){
+        return convertSqlTypeToHanaDdl(this.sqlDataType);
+    }
+
+    private static String convertSqlTypeToHanaDdl(int sqlType){
+        switch (sqlType){
+            case Types.BOOLEAN:
+                return "BOOLEAN";
+            case Types.SMALLINT:
+            case Types.INTEGER:
+                return "INTEGER";
+            case Types.BIGINT:
+                return "BIGINT";
+            case Types.REAL:
+            case Types.DOUBLE:
+                return "DOUBLE";
+            default:
+                return "NVARCHAR(5000)";
+        }
+    }
+
+    private static Class convertSqlToJavaCytoType(int sqlType){
         // data types supported in cytoscape tables:
         // Boolean, String, Integer, Long, Double
         // List<Boolean>, List<String>, List<Integer>, List<Long>, List<Double>
@@ -48,7 +69,7 @@ public class HanaDataType {
         }
     }
 
-    public static<T> int convertJavaToSqlType(T classType) {
+    private static<T> int convertJavaToSqlType(T classType) {
 
         if (classType.equals(String.class)) {
             return Types.NVARCHAR;

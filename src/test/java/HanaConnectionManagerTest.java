@@ -198,12 +198,31 @@ public class HanaConnectionManagerTest {
             HanaDbObject newTable = new HanaDbObject(connectionManager.getCurrentSchema(), newTableName);
             List<HanaColumnInfo> newCols = Arrays.asList(
                     new HanaColumnInfo(newTable.schema, newTable.name, "COL1", Types.INTEGER),
-                    new HanaColumnInfo(newTable.schema, newTable.name, "COL2", Types.VARCHAR),
+                    new HanaColumnInfo(newTable.schema, newTable.name, "COL2", Types.NVARCHAR),
                     new HanaColumnInfo(newTable.schema, newTable.name, "COL3", Types.DOUBLE)
             );
 
             connectionManager.createTable(newTable, newCols);
 
+            HanaQueryResult queryResult = connectionManager.executeQueryList(String.format(
+                    sqlStringsTest.getProperty("GENERIC_SELECT_PROJECTION"),
+                    "*",
+                    connectionManager.getCurrentSchema(),
+                    newTableName
+            ));
+
+            Assert.assertEquals(3, queryResult.getColumnMetadata().length);
+            for(HanaColumnInfo colInfo : queryResult.getColumnMetadata()){
+                if(colInfo.name.equals("COL1")){
+                    Assert.assertEquals(Types.INTEGER, colInfo.dataType.getSqlDataType());
+                } else if(colInfo.name.equals("COL2")){
+                    Assert.assertEquals(Types.NVARCHAR, colInfo.dataType.getSqlDataType());
+                } else if(colInfo.name.equals("COL3")){
+                    Assert.assertEquals(Types.DOUBLE, colInfo.dataType.getSqlDataType());
+                } else {
+                    Assert.fail("Unknown column");
+                }
+            }
         } catch (SQLException e){
             Assert.fail(e.toString());
         }
