@@ -10,12 +10,11 @@ public class HanaSqlParameter{
     public Object parameterValue;
     /**
      * SQL Type of the parameter
-     * (see java.sql.Types)
      */
-    public int parameterType;
+    public HanaDataType hanaDataType;
 
-    public HanaSqlParameter(Object parameterValue, int parameterType){
+    public HanaSqlParameter(Object parameterValue, int sqlType){
         this.parameterValue = parameterValue;
-        this.parameterType = parameterType;
+        this.hanaDataType = new HanaDataType(sqlType);
     }
 }
