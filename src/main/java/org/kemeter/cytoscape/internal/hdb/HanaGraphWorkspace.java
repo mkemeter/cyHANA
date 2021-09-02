@@ -2,6 +2,7 @@ package org.kemeter.cytoscape.internal.hdb;
 
 import org.cytoscape.model.*;
 
+import java.sql.Types;
 import java.util.*;
 
 /**
@@ -47,6 +48,7 @@ public class HanaGraphWorkspace{
                     targetTable.schema,
                     targetTable.name,
                     col.getName(),
+                    HanaDataType.convertJavaToSqlType(col.getType()),
                     col.isPrimaryKey()
             ));
         }
@@ -132,8 +134,8 @@ public class HanaGraphWorkspace{
         // see sample dataset "Ivacaftor Coauthor".
         this.edgeSourceColName = CYHANA_SOURCE_COL;
         this.edgeTargetColName = CYHANA_TARGET_COL;
-        this.edgeFields.put(CYHANA_SOURCE_COL, new HanaColumnInfo(schema, edgeTableName, CYHANA_SOURCE_COL, false, true));
-        this.edgeFields.put(CYHANA_TARGET_COL, new HanaColumnInfo(schema, edgeTableName, CYHANA_TARGET_COL, false, true));
+        this.edgeFields.put(CYHANA_SOURCE_COL, new HanaColumnInfo(schema, edgeTableName, CYHANA_SOURCE_COL, Types.BIGINT, false, true));
+        this.edgeFields.put(CYHANA_TARGET_COL, new HanaColumnInfo(schema, edgeTableName, CYHANA_TARGET_COL, Types.BIGINT, false, true));
 
         if(this.edgeKeyColName == null || this.edgeKeyColName.isEmpty()){
             this.edgeKeyColName = "SUID";
@@ -264,8 +266,16 @@ public class HanaGraphWorkspace{
         return new ArrayList(this.nodeFields.values());
     }
 
+    public HanaColumnInfo getNodeFieldInfo(String name){
+        return this.nodeFields.get(name);
+    }
+
     public ArrayList<HanaColumnInfo> getEdgeFieldList() {
         return new ArrayList(this.edgeFields.values());
+    }
+
+    public HanaColumnInfo getEdgeFieldInfo(String name){
+        return this.edgeFields.get(name);
     }
 
     public List<Map<String, Object>> getNodeTableData() {

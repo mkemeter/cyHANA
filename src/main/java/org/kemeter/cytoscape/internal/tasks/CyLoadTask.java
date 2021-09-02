@@ -44,10 +44,11 @@ public class CyLoadTask extends AbstractTask {
     public static void enhanceCyTableWithAttributes(CyTable cyTable, List<HanaColumnInfo> fieldList){
         for(HanaColumnInfo hanaCol : fieldList){
             CyColumn col = cyTable.getColumn(hanaCol.name);
+
             if(col == null) {
                 // try to re-use columns, that are already existing. This might cause clashes with the Cytoscape
                 // data model, but makes loading of networks, that have been created with Cytoscape, easier.
-                cyTable.createColumn(hanaCol.name, String.class, false);
+                cyTable.createColumn(hanaCol.name, hanaCol.dataType.getJavaCytoDataType(), false);
             }
         }
     }

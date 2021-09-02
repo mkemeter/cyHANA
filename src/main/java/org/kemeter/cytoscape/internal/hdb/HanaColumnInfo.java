@@ -22,6 +22,11 @@ public class HanaColumnInfo{
     /**
      *
      */
+    public HanaDataType dataType;
+
+    /**
+     *
+     */
     public boolean primaryKey;
 
     /**
@@ -29,18 +34,19 @@ public class HanaColumnInfo{
      */
     public boolean notNull;
 
-    public HanaColumnInfo(String schema, String table, String name) {
-        this(schema, table, name, false);
+    public HanaColumnInfo(String schema, String table, String name, int sqlType) {
+        this(schema, table, name, sqlType, false);
     }
 
-    public HanaColumnInfo(String schema, String table, String name, boolean primaryKey){
-        this(schema, table, name, primaryKey, false);
+    public HanaColumnInfo(String schema, String table, String name, int sqlType, boolean primaryKey){
+        this(schema, table, name, sqlType, primaryKey, false);
     }
 
-    public HanaColumnInfo(String schema, String table, String name, boolean primaryKey, boolean notNull){
+    public HanaColumnInfo(String schema, String table, String name, int sqlType, boolean primaryKey, boolean notNull){
         this.schema = schema;
         this.table = table;
         this.name = name;
+        this.dataType = new HanaDataType(sqlType);
         this.primaryKey = primaryKey;
         this.notNull = notNull;
     }

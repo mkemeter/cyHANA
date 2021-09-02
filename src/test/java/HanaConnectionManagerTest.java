@@ -7,6 +7,7 @@ import org.kemeter.cytoscape.internal.utils.IOUtils;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.*;
 
 public class HanaConnectionManagerTest {
@@ -99,15 +100,17 @@ public class HanaConnectionManagerTest {
     @Test
     public void testSomeQuery(){
 
-        List<Object[]> resultList = null;
+        HanaQueryResult queryResult = null;
         try {
-            resultList = connectionManager.executeQueryList(
+            queryResult = connectionManager.executeQueryList(
                     sqlStringsTest.getProperty("SOME_QUERY"),
                     null
             );
         } catch (SQLException e){
             Assert.fail(e.toString());
         }
+
+        List<Object[]> resultList = queryResult.getRecordList();
 
         if(resultList == null || resultList.size() != 2) Assert.fail();
 
@@ -194,9 +197,9 @@ public class HanaConnectionManagerTest {
             String newTableName = "TEST_TABLE";
             HanaDbObject newTable = new HanaDbObject(connectionManager.getCurrentSchema(), newTableName);
             List<HanaColumnInfo> newCols = Arrays.asList(
-                    new HanaColumnInfo(newTable.schema, newTable.name, "COL1"),
-                    new HanaColumnInfo(newTable.schema, newTable.name, "COL2"),
-                    new HanaColumnInfo(newTable.schema, newTable.name, "COL3")
+                    new HanaColumnInfo(newTable.schema, newTable.name, "COL1", Types.INTEGER),
+                    new HanaColumnInfo(newTable.schema, newTable.name, "COL2", Types.VARCHAR),
+                    new HanaColumnInfo(newTable.schema, newTable.name, "COL3", Types.DOUBLE)
             );
 
             connectionManager.createTable(newTable, newCols);
@@ -210,9 +213,9 @@ public class HanaConnectionManagerTest {
     public void testBulkInsert(){
         HanaDbObject targetTable = new HanaDbObject(testSchema, "TEST_BULK_INSERT_TABLE");
         List<HanaColumnInfo> columnInfoList = Arrays.asList(
-                new HanaColumnInfo(targetTable.schema, targetTable.name, "COL1"),
-                new HanaColumnInfo(targetTable.schema, targetTable.name, "COL2"),
-                new HanaColumnInfo(targetTable.schema, targetTable.name, "COL3")
+                new HanaColumnInfo(targetTable.schema, targetTable.name, "COL1", Types.NVARCHAR),
+                new HanaColumnInfo(targetTable.schema, targetTable.name, "COL2", Types.NVARCHAR),
+                new HanaColumnInfo(targetTable.schema, targetTable.name, "COL3", Types.NVARCHAR)
         );
 
         int nRecords = 10;
@@ -235,6 +238,46 @@ public class HanaConnectionManagerTest {
             ), null, Integer.class);
             Assert.assertEquals(nRecords, actualRecords);
         } catch (SQLException e){
+            Assert.fail(e.toString());
+        }
+    }
+
+    @Test
+    public void testResultSetSqlTypes(){
+        try{
+            HanaGraphWorkspace sspWorkspace = connectionManager.loadGraphWorkspace(connectionManager.getCurrentSchema(), "SSP");
+
+            for(HanaColumnInfo colInfo : sspWorkspace.getNodeFieldList()){
+                if(colInfo.name.equals("ID")){
+                    Assert.assertEquals(Types.INTEGER, colInfo.dataType.getSqlDataType());
+                }
+                if(colInfo.name.equals("NAME")){
+                    Assert.assertEquals(Types.NVARCHAR, colInfo.dataType.getSqlDataType());
+                }
+            }
+        }catch(Exception e){
+            Assert.fail(e.toString());
+        }
+    }
+
+    @Test
+    public void testResultSetJavaTypes(){
+        try{
+            HanaGraphWorkspace sspWorkspace = connectionManager.loadGraphWorkspace(connectionManager.getCurrentSchema(), "SSP");
+
+            for(HanaNodeTableRow row : sspWorkspace.getNodeTable()){
+                Object idValue = row.getFieldValueRaw("ID");
+                Assert.assertNotNull(idValue);
+                Assert.assertEquals(Integer.class, idValue.getClass());
+                Assert.assertNotEquals(String.class, idValue.getClass());
+
+                Object nameValue = row.getFieldValueRaw("NAME");
+                Assert.assertNotNull(nameValue);
+                Assert.assertNotEquals(Integer.class, nameValue.getClass());
+                Assert.assertEquals(String.class, nameValue.getClass());
+            }
+
+        }catch(Exception e){
             Assert.fail(e.toString());
         }
     }

@@ -120,7 +120,7 @@ public class HanaConnectionManager {
      * @param params    SQL parameters
      * @return          The ResultSet of the query; Null in case of errors
      */
-    public ResultSet executeQuery(String statement, HanaSqlParameter[] params) throws SQLException {
+    private ResultSet executeQuery(String statement, HanaSqlParameter[] params) throws SQLException {
         try{
             PreparedStatement stmt = this.connection.prepareStatement(statement);
 
@@ -144,7 +144,7 @@ public class HanaConnectionManager {
      * @param statement The statement to execute
      * @return          The result of the query as a list; Null in case of errors
      */
-    public List<Object[]> executeQueryList(String statement) throws SQLException {
+    public HanaQueryResult executeQueryList(String statement) throws SQLException {
         return this.executeQueryList(statement, null);
     }
 
@@ -155,22 +155,33 @@ public class HanaConnectionManager {
      * @param params    SQL parameters
      * @return          The result of the query as a list; Null in case of errors
      */
-    public List<Object[]> executeQueryList(String statement, HanaSqlParameter[] params) throws SQLException {
+    public HanaQueryResult executeQueryList(String statement, HanaSqlParameter[] params) throws SQLException {
         ResultSet resultSet = this.executeQuery(statement, params);
 
         try {
             ResultSetMetaData metaData = resultSet.getMetaData();
-            List<Object[]> resultList = new ArrayList<>();
-
-            while (resultSet.next()) {
-                Object[] newRow = new Object[metaData.getColumnCount()];
-                for (int col = 1; col <= metaData.getColumnCount(); col++) {
-                    newRow[col - 1] = resultSet.getObject(col);
-                }
-                resultList.add(newRow);
+            int nCols = metaData.getColumnCount();
+            HanaQueryResult queryResult = new HanaQueryResult(nCols);
+            for(int col = 1; col <= nCols; col++) {
+                queryResult.setColumnMetadata(col-1, new HanaColumnInfo(
+                        metaData.getSchemaName(col),
+                        metaData.getTableName(col),
+                        metaData.getColumnName(col),
+                        metaData.getColumnType(col),
+                        false,
+                        metaData.isNullable(col) == 0
+                ));
             }
 
-            return resultList;
+            while (resultSet.next()) {
+                Object[] newRow = new Object[nCols];
+                for (int col = 1; col <= nCols; col++) {
+                    newRow[col - 1] = resultSet.getObject(col);
+                }
+                queryResult.addRecord(newRow);
+            }
+
+            return queryResult;
         } catch (SQLException e) {
             err("Could not fetch data. " + statement);
             err(e.toString());
@@ -239,10 +250,10 @@ public class HanaConnectionManager {
      * @return  List of all available graph workspaces
      */
     public List<HanaDbObject> listGraphWorkspaces() throws SQLException {
-        List<Object[]> resultList = this.executeQueryList(this.sqlStrings.getProperty("LIST_GRAPH_WORKSPACES"));
+        HanaQueryResult queryResult = this.executeQueryList(this.sqlStrings.getProperty("LIST_GRAPH_WORKSPACES"));
 
         List<HanaDbObject> workspaceList = new ArrayList<>();
-        for(Object[] row : resultList){
+        for(Object[] row : queryResult.getRecordList()){
             workspaceList.add(new HanaDbObject(toStrNull(row[0]), toStrNull(row[1])));
         }
 
@@ -256,13 +267,12 @@ public class HanaConnectionManager {
      * @param graphWorkspace    HanaGraphWorkspace with pre-populated workspaceDbObject
      */
     private void loadWorkspaceMetadata(HanaGraphWorkspace graphWorkspace) throws SQLException, HanaConnectionManagerException {
-        List<Object[]> metadata;
 
         String propName="LOAD_WORKSPACE_METADATA_HANA_" +
                 (isCloudEdition(this.buildVersion)? "CLOUD":"ONPREM");
 
         debug("Reading graph metadata with "+propName);
-        metadata = this.executeQueryList(
+        HanaQueryResult wsMetadata = this.executeQueryList(
                     this.sqlStrings.getProperty(propName),
                     new HanaSqlParameter[]{
                             new HanaSqlParameter(graphWorkspace.getWorkspaceDbObject().schema, Types.VARCHAR),
@@ -270,8 +280,9 @@ public class HanaConnectionManager {
                     }
             );
         
-        for(Object[] row : metadata){
-            HanaColumnInfo newColInfo = new HanaColumnInfo(toStrNull(row[2]), toStrNull(row[3]), toStrNull(row[4]));
+        for(Object[] row : wsMetadata.getRecordList()){
+            // Types will be set when retrieving actual data
+            HanaColumnInfo newColInfo = new HanaColumnInfo(toStrNull(row[2]), toStrNull(row[3]), toStrNull(row[4]), Types.OTHER);
 
             switch(toStrNull(row[0])){
                 case "EDGE":
@@ -323,7 +334,7 @@ public class HanaConnectionManager {
         }
         fields = fields.substring(0, fields.length()-1);
 
-        List<Object[]> nodeTable = this.executeQueryList(String.format(
+        HanaQueryResult nodeTable = this.executeQueryList(String.format(
                 this.sqlStrings.getProperty("GENERIC_SELECT_PROJECTION"),
                 fields,
                 graphWorkspace.getNodeKeyColInfo().schema,
@@ -331,7 +342,12 @@ public class HanaConnectionManager {
         ), null);
 
         graphWorkspace.clearNodeTable();
-        for(Object[] row : nodeTable){
+        // reflect types, that have actually been retrieved:
+        for(HanaColumnInfo colInfo: nodeTable.getColumnMetadata()){
+            graphWorkspace.getNodeFieldInfo(colInfo.name).dataType = colInfo.dataType;
+        }
+
+        for(Object[] row : nodeTable.getRecordList()){
             HanaNodeTableRow newRow = new HanaNodeTableRow();
             newRow.setKeyFieldName(graphWorkspace.getNodeKeyColInfo().name);
             for(int i=0; i<row.length; i++){
@@ -356,7 +372,7 @@ public class HanaConnectionManager {
         }
         fields = fields.substring(0, fields.length()-1);
 
-        List<Object[]> edgeTable = this.executeQueryList(String.format(
+        HanaQueryResult edgeTable = this.executeQueryList(String.format(
                 this.sqlStrings.getProperty("GENERIC_SELECT_PROJECTION"),
                 fields,
                 graphWorkspace.getEdgeKeyColInfo().schema,
@@ -364,7 +380,12 @@ public class HanaConnectionManager {
         ), null);
 
         graphWorkspace.clearEdgeTable();
-        for(Object[] row : edgeTable){
+        // reflect types, that have actually been retrieved:
+        for(HanaColumnInfo colInfo: edgeTable.getColumnMetadata()){
+            graphWorkspace.getEdgeFieldInfo(colInfo.name).dataType = colInfo.dataType;
+        }
+
+        for(Object[] row : edgeTable.getRecordList()){
             HanaEdgeTableRow newRow = new HanaEdgeTableRow();
             newRow.setKeyFieldName(graphWorkspace.getEdgeKeyColInfo().name);
             newRow.setSourceFieldName(graphWorkspace.getEdgeSourceColInfo().name);
