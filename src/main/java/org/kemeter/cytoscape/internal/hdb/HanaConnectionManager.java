@@ -245,6 +245,15 @@ public class HanaConnectionManager {
     }
 
     /**
+     *
+     * @return
+     * @throws SQLException
+     */
+    public String getInstanceIdentifier() throws SQLException {
+        return this.connection.getMetaData().getURL();
+    }
+
+    /**
      * Retrieves a list of all graph workspaces on the SAP HANA instance
      *
      * @return  List of all available graph workspaces

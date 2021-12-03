@@ -5,6 +5,7 @@ import org.cytoscape.work.*;
 import org.kemeter.cytoscape.internal.hdb.HanaConnectionManager;
 import org.kemeter.cytoscape.internal.utils.CyNetworkKey;
 import org.kemeter.cytoscape.internal.hdb.HanaGraphWorkspace;
+import org.kemeter.cytoscape.internal.utils.CyUtils;
 
 public class CyCreateWorkspaceTask extends AbstractTask {
 
@@ -95,6 +96,14 @@ public class CyCreateWorkspaceTask extends AbstractTask {
                 newWorkspace.getEdgeTableDbObject(),
                 newWorkspace.getEdgeFieldList(),
                 newWorkspace.getEdgeTableData()
+        );
+
+        taskMonitor.setStatusMessage("Linking Cytoscape Network to SAP HANA Graph Workspace");
+        CyUtils.enhanceCyNetworkWithDatabaseLinkInformation(
+                selectedNetwork.getDefaultNetworkTable(),
+                selectedNetwork.getSUID(),
+                connectionManager.getInstanceIdentifier(),
+                newWorkspace.getWorkspaceDbObject().toString()
         );
 
         taskMonitor.setStatusMessage("Creating Graph Workspace");

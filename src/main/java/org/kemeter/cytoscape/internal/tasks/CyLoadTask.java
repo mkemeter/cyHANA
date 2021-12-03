@@ -3,7 +3,9 @@ package org.kemeter.cytoscape.internal.tasks;
 import org.cytoscape.model.*;
 import org.cytoscape.work.*;
 import org.kemeter.cytoscape.internal.hdb.*;
+import org.kemeter.cytoscape.internal.utils.CyUtils;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 
@@ -39,18 +41,6 @@ public class CyLoadTask extends AbstractTask {
         CyConnectTask.tryConnect(this.connectionManager);
 
         this.tunables = new CyLoadTaskTunables(this.connectionManager);
-    }
-
-    public static void enhanceCyTableWithAttributes(CyTable cyTable, List<HanaColumnInfo> fieldList){
-        for(HanaColumnInfo hanaCol : fieldList){
-            CyColumn col = cyTable.getColumn(hanaCol.name);
-
-            if(col == null) {
-                // try to re-use columns, that are already existing. This might cause clashes with the Cytoscape
-                // data model, but makes loading of networks, that have been created with Cytoscape, easier.
-                cyTable.createColumn(hanaCol.name, hanaCol.dataType.getJavaCytoDataType(), false);
-            }
-        }
     }
 
     /**
@@ -93,11 +83,19 @@ public class CyLoadTask extends AbstractTask {
         // visible name of the network in the client
         newNetwork.getDefaultNetworkTable().getRow(newNetwork.getSUID()).set("name", selectedWorkspaceKey);
 
+        // link to hana instance and graph workspace to enable operations such as 'refresh'
+        CyUtils.enhanceCyNetworkWithDatabaseLinkInformation(
+                newNetwork.getDefaultNetworkTable(),
+                newNetwork.getSUID(),
+                connectionManager.getInstanceIdentifier(),
+                graphWorkspace.getWorkspaceDbObject().toString()
+        );
+
         // create node attributes
-        enhanceCyTableWithAttributes(newNetwork.getDefaultNodeTable(), graphWorkspace.getNodeFieldList());
+        CyUtils.enhanceCyTableWithAttributes(newNetwork.getDefaultNodeTable(), graphWorkspace.getNodeFieldList());
 
         // create edge attributes
-        enhanceCyTableWithAttributes(newNetwork.getDefaultEdgeTable(), graphWorkspace.getEdgeFieldList());
+        CyUtils.enhanceCyTableWithAttributes(newNetwork.getDefaultEdgeTable(), graphWorkspace.getEdgeFieldList());
 
         // measure progress based on number of nodes and edges
         int nGraphObjects = graphWorkspace.getEdgeTable().size() + graphWorkspace.getNodeTable().size();

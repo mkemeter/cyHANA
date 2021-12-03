@@ -9,6 +9,7 @@ import org.cytoscape.work.swing.GUITunableHandlerFactory;
 import org.cytoscape.work.swing.SimpleGUITunableHandlerFactory;
 import org.kemeter.cytoscape.internal.tasks.CyCreateWorkspaceTaskFactory;
 import org.kemeter.cytoscape.internal.tasks.CyLoadTaskFactory;
+import org.kemeter.cytoscape.internal.tasks.CyRefreshTaskFactory;
 import org.kemeter.cytoscape.internal.tunables.PasswordString;
 import org.kemeter.cytoscape.internal.tunables.PasswordStringGUIHandler;
 import org.osgi.framework.BundleContext;
@@ -59,6 +60,16 @@ public class CyActivator extends AbstractCyActivator {
             loadProps.setProperty(ServiceProperties.TITLE, "Load Graph Workspace from Database");
             loadProps.setProperty(ServiceProperties.MENU_GRAVITY, "3.0");
             registerService(bc, loadFactory, TaskFactory.class, loadProps);
+
+            // refresh current network from SAP HANA
+            /*
+            CyRefreshTaskFactory refreshFactory = new CyRefreshTaskFactory(networkFactory, networkManager, connectionManager);
+            Properties refreshProps = new Properties();
+            refreshProps.setProperty(ServiceProperties.PREFERRED_MENU, "Apps.SAP HANA");
+            refreshProps.setProperty(ServiceProperties.TITLE, "Refresh Current Network from Database");
+            refreshProps.setProperty(ServiceProperties.MENU_GRAVITY, "4.0");
+            registerService(bc, refreshFactory, TaskFactory.class, refreshProps);
+            */
 
             // load result of openCypher query
 
