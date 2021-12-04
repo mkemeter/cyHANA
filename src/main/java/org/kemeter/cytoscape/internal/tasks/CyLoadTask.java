@@ -88,7 +88,7 @@ public class CyLoadTask extends AbstractTask {
                 newNetwork.getDefaultNetworkTable(),
                 newNetwork.getSUID(),
                 connectionManager.getInstanceIdentifier(),
-                graphWorkspace.getWorkspaceDbObject().toString()
+                graphWorkspace.getWorkspaceDbObject()
         );
 
         // create node attributes
@@ -106,16 +106,8 @@ public class CyLoadTask extends AbstractTask {
         // create nodes
         HashMap<String, CyNode> nodesByHanaKey = new HashMap<>();
         for(HanaNodeTableRow row : graphWorkspace.getNodeTable()){
-            CyNode newNode = newNetwork.addNode();
-            CyRow newRow = newNetwork.getDefaultNodeTable().getRow(newNode.getSUID());
-            newRow.set("name", row.getKeyValue(String.class));
-            for(HanaColumnInfo field : graphWorkspace.getNodeFieldList()){
-                // convert to target type in case an existing cytoscape field is re-used
-                Class fieldType = newNetwork.getDefaultNodeTable().getColumn(field.name).getType();
-                newRow.set(field.name, row.getFieldValueCast(field.name, fieldType));
-            }
+            CyNode newNode = CyUtils.addNewNodeToNetwork(newNetwork, graphWorkspace, row);
             nodesByHanaKey.put(row.getKeyValue(String.class), newNode);
-
             taskMonitor.setProgress(progress++ / (double)nGraphObjects);
         }
 
@@ -123,21 +115,7 @@ public class CyLoadTask extends AbstractTask {
 
         // create edges
         for(HanaEdgeTableRow row: graphWorkspace.getEdgeTable()){
-            CyNode sourceNode = nodesByHanaKey.get(row.getSourceValue(String.class));
-            String sourceNodeName = newNetwork.getDefaultNodeTable().getRow(sourceNode.getSUID()).get("name", String.class);
-            CyNode targetNode = nodesByHanaKey.get(row.getTargetValue(String.class));
-            String targetNodeName = newNetwork.getDefaultNodeTable().getRow(targetNode.getSUID()).get("name", String.class);
-
-            CyEdge newEdge = newNetwork.addEdge(sourceNode, targetNode, true);
-            CyRow newRow = newNetwork.getDefaultEdgeTable().getRow(newEdge.getSUID());
-
-            newRow.set("name", sourceNodeName + " -> " + targetNodeName);
-            for(HanaColumnInfo field : graphWorkspace.getEdgeFieldList()){
-                // convert to target type in case an existing cytoscape field is re-used
-                Class fieldType = newNetwork.getDefaultEdgeTable().getColumn(field.name).getType();
-                newRow.set(field.name, row.getFieldValueCast(field.name, fieldType));
-            }
-
+            CyUtils.addNewEdgeToNetwork(newNetwork, graphWorkspace, row, nodesByHanaKey);
             taskMonitor.setProgress(progress++ / (double)nGraphObjects);
         }
 

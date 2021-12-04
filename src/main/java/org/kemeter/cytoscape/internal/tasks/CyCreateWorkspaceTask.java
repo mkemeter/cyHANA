@@ -103,7 +103,7 @@ public class CyCreateWorkspaceTask extends AbstractTask {
                 selectedNetwork.getDefaultNetworkTable(),
                 selectedNetwork.getSUID(),
                 connectionManager.getInstanceIdentifier(),
-                newWorkspace.getWorkspaceDbObject().toString()
+                newWorkspace.getWorkspaceDbObject()
         );
 
         taskMonitor.setStatusMessage("Creating Graph Workspace");

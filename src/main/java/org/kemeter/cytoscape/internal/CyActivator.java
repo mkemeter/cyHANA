@@ -62,14 +62,12 @@ public class CyActivator extends AbstractCyActivator {
             registerService(bc, loadFactory, TaskFactory.class, loadProps);
 
             // refresh current network from SAP HANA
-            /*
             CyRefreshTaskFactory refreshFactory = new CyRefreshTaskFactory(networkFactory, networkManager, connectionManager);
             Properties refreshProps = new Properties();
             refreshProps.setProperty(ServiceProperties.PREFERRED_MENU, "Apps.SAP HANA");
             refreshProps.setProperty(ServiceProperties.TITLE, "Refresh Current Network from Database");
             refreshProps.setProperty(ServiceProperties.MENU_GRAVITY, "4.0");
             registerService(bc, refreshFactory, TaskFactory.class, refreshProps);
-            */
 
             // load result of openCypher query
 
