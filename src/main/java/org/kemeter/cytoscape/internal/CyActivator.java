@@ -48,6 +48,8 @@ public class CyActivator extends AbstractCyActivator {
             connectProps.setProperty(ServiceProperties.PREFERRED_MENU, this.menuConfiguration.getProperty("CONNECT_PREFERRED_MENU"));
             connectProps.setProperty(ServiceProperties.TITLE, this.menuConfiguration.getProperty("CONNECT_TITLE"));
             connectProps.setProperty(ServiceProperties.MENU_GRAVITY, this.menuConfiguration.getProperty("CONNECT_MENU_GRAVITY"));
+            connectProps.setProperty(ServiceProperties.INSERT_SEPARATOR_BEFORE, this.menuConfiguration.getProperty("CONNECT_SEPARATOR_BEFORE"));
+            connectProps.setProperty(ServiceProperties.INSERT_SEPARATOR_AFTER, this.menuConfiguration.getProperty("CONNECT_SEPARATOR_AFTER"));
             registerService(bc, connectFactory, TaskFactory.class, connectProps);
 
             // create graph workspace from network
@@ -56,6 +58,8 @@ public class CyActivator extends AbstractCyActivator {
             createProps.setProperty(ServiceProperties.PREFERRED_MENU, this.menuConfiguration.getProperty("CREATE_PREFERRED_MENU"));
             createProps.setProperty(ServiceProperties.TITLE, this.menuConfiguration.getProperty("CREATE_TITLE"));
             createProps.setProperty(ServiceProperties.MENU_GRAVITY, this.menuConfiguration.getProperty("CREATE_MENU_GRAVITY"));
+            createProps.setProperty(ServiceProperties.INSERT_SEPARATOR_BEFORE, this.menuConfiguration.getProperty("CREATE_SEPARATOR_BEFORE"));
+            createProps.setProperty(ServiceProperties.INSERT_SEPARATOR_AFTER, this.menuConfiguration.getProperty("CREATE_SEPARATOR_AFTER"));
             registerService(bc, createFactory, TaskFactory.class, createProps);
 
             // load graph workspace
@@ -64,6 +68,8 @@ public class CyActivator extends AbstractCyActivator {
             loadProps.setProperty(ServiceProperties.PREFERRED_MENU, this.menuConfiguration.getProperty("LOAD_PREFERRED_MENU"));
             loadProps.setProperty(ServiceProperties.TITLE, this.menuConfiguration.getProperty("LOAD_TITLE"));
             loadProps.setProperty(ServiceProperties.MENU_GRAVITY, this.menuConfiguration.getProperty("LOAD_MENU_GRAVITY"));
+            loadProps.setProperty(ServiceProperties.INSERT_SEPARATOR_BEFORE, this.menuConfiguration.getProperty("LOAD_SEPARATOR_BEFORE"));
+            loadProps.setProperty(ServiceProperties.INSERT_SEPARATOR_AFTER, this.menuConfiguration.getProperty("LOAD_SEPARATOR_AFTER"));
             registerService(bc, loadFactory, TaskFactory.class, loadProps);
 
             // refresh current network from SAP HANA
@@ -72,6 +78,8 @@ public class CyActivator extends AbstractCyActivator {
             refreshProps.setProperty(ServiceProperties.PREFERRED_MENU, this.menuConfiguration.getProperty("REFRESH_PREFERRED_MENU"));
             refreshProps.setProperty(ServiceProperties.TITLE, this.menuConfiguration.getProperty("REFRESH_TITLE"));
             refreshProps.setProperty(ServiceProperties.MENU_GRAVITY, this.menuConfiguration.getProperty("REFRESH_MENU_GRAVITY"));
+            refreshProps.setProperty(ServiceProperties.INSERT_SEPARATOR_BEFORE, this.menuConfiguration.getProperty("REFRESH_SEPARATOR_BEFORE"));
+            refreshProps.setProperty(ServiceProperties.INSERT_SEPARATOR_AFTER, this.menuConfiguration.getProperty("REFRESH_SEPARATOR_AFTER"));
             registerService(bc, refreshFactory, TaskFactory.class, refreshProps);
 
             // load result of openCypher query
