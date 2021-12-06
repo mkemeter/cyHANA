@@ -14,7 +14,7 @@ public class UtilsTest {
     public void testCacheAndRestoreProperties(){
         String testFileAbsPath = "";
         try{
-            File testFile = File.createTempFile("cyhana", ".properties");
+            File testFile = File.createTempFile("saphana_cytoscape", ".properties");
             testFile.deleteOnExit();
             testFileAbsPath = testFile.getAbsolutePath();
         } catch (IOException e){

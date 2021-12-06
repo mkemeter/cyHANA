@@ -3,24 +3,24 @@ package org.kemeter.cytoscape.internal.utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CyHanaLogging {
+public class CyLogging {
 
     // private static Logger logger = LoggerFactory.getLogger("org.cytoscape.application.userlog");
-    private static Logger logger = LoggerFactory.getLogger(CyHanaLogging.class);
+    private static Logger logger = LoggerFactory.getLogger(CyLogging.class);
 
     public static void debug(String msg){
-        logger.debug("[cyHANA] " + msg);
+        logger.debug("[SAP HANA plug-in] " + msg);
     }
 
     public static void info(String msg){
-        logger.info( "[cyHANA] " + msg);
+        logger.info( "[SAP HANA plug-in] " + msg);
     }
 
     public static void warn(String msg){
-        logger.warn( "[cyHANA] " + msg);
+        logger.warn( "[SAP HANA plug-in] " + msg);
     }
 
     public static void err(String msg){
-        logger.error("[cyHANA] " + msg);
+        logger.error("[SAP HANA plug-in] " + msg);
     }
 }

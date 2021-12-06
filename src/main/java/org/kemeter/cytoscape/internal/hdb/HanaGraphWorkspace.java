@@ -10,8 +10,8 @@ import java.util.*;
  */
 public class HanaGraphWorkspace{
 
-    private static final String CYHANA_SOURCE_COL = "CYHANA_SOURCE_SUID";
-    private static final String CYHANA_TARGET_COL = "CYHANA_TARGET_SUID";
+    private static final String SAPHANA_SOURCE_COL = "SAPHANA_SOURCE_SUID";
+    private static final String SAPHANA_TARGET_COL = "SAPHANA_TARGET_SUID";
 
     private List<HanaEdgeTableRow> edgeTable;
 
@@ -132,10 +132,10 @@ public class HanaGraphWorkspace{
 
         // not every edge table in cytoscape contains source and target info.
         // see sample dataset "Ivacaftor Coauthor".
-        this.edgeSourceColName = CYHANA_SOURCE_COL;
-        this.edgeTargetColName = CYHANA_TARGET_COL;
-        this.edgeFields.put(CYHANA_SOURCE_COL, new HanaColumnInfo(schema, edgeTableName, CYHANA_SOURCE_COL, Types.BIGINT, false, true));
-        this.edgeFields.put(CYHANA_TARGET_COL, new HanaColumnInfo(schema, edgeTableName, CYHANA_TARGET_COL, Types.BIGINT, false, true));
+        this.edgeSourceColName = SAPHANA_SOURCE_COL;
+        this.edgeTargetColName = SAPHANA_TARGET_COL;
+        this.edgeFields.put(SAPHANA_SOURCE_COL, new HanaColumnInfo(schema, edgeTableName, SAPHANA_SOURCE_COL, Types.BIGINT, false, true));
+        this.edgeFields.put(SAPHANA_TARGET_COL, new HanaColumnInfo(schema, edgeTableName, SAPHANA_TARGET_COL, Types.BIGINT, false, true));
 
         if(this.edgeKeyColName == null || this.edgeKeyColName.isEmpty()){
             this.edgeKeyColName = "SUID";

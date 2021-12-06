@@ -54,7 +54,7 @@ public class HanaConnectionManagerTest {
     @BeforeClass
     public static void setUp() throws IOException, SQLException {
         sqlStringsTest = IOUtils.loadResourceProperties("SqlStringsTest.sql");
-        testSchema = "CYHANA_TEST_" + UUID.randomUUID().toString();
+        testSchema = "CYTOSCAPE_TEST_" + UUID.randomUUID().toString();
 
         connectionManager = connectToTestInstance();
 

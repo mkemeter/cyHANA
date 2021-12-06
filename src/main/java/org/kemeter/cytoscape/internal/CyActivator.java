@@ -75,7 +75,7 @@ public class CyActivator extends AbstractCyActivator {
 
             // TODO handle heterogeneous graphs
         } catch (Exception e){
-            System.err.println("Failed to activate cyHANA plugin");
+            System.err.println("Failed to activate SAP HANA plug-in for Cytoscape");
             System.err.println(e);
         }
     }

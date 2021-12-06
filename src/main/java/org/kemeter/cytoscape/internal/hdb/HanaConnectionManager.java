@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-import static org.kemeter.cytoscape.internal.utils.CyHanaLogging.*;
+import static org.kemeter.cytoscape.internal.utils.CyLogging.*;
 import static org.kemeter.cytoscape.internal.utils.HanaUtils.*;
 
 /**

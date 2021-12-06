@@ -12,7 +12,7 @@ public class IOUtils {
      * The filename where credentials will be stored between sessions
      */
     public static String getCacheFile(){
-        return Paths.get(System.getProperty("user.home"), "cyhana_cache.properties").toString();
+        return Paths.get(System.getProperty("user.home"), "saphana_cytoscape_cache.properties").toString();
     }
 
     public static void cacheProperties(Properties properties) throws IOException {
